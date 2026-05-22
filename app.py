@@ -166,25 +166,25 @@ elif page == "📘 Tool 1 - Lamba Karo":
             key="canvas",
         )
 
-    with col2:
+   with col2:
 
-        st.subheader("3D Controls")
+    st.subheader("3D Controls")
 
-        length = st.slider("Length", 10, 100, 50)
-        width = st.slider("Width", 10, 100, 20)
-        height = st.slider("Motai (Extrude)", 1, 50, 10)
+    length = st.slider("Length", 10, 100, 50)
+    width = st.slider("Width", 10, 100, 20)
+    height = st.slider("Motai (Extrude)", 1, 50, 10)
 
-      if st.button("🚀 Lamba Karo"):
+    if st.button("🚀 Lamba Karo"):
 
-         st.success("✅ 3D Part Ban Gaya!")
+        st.success("✅ 3D Part Ban Gaya!")
 
         st.info(f"""
-        Length: {length} mm
+Length: {length} mm
 
-        Width: {width} mm
+Width: {width} mm
 
-        Height: {height} mm
-        """)
+Height: {height} mm
+""")
 
         st.balloons()
 
