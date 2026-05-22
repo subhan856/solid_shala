@@ -1,5 +1,4 @@
 streamlit
-plotly
 numpy
-streamlit-drawable-canvas
-opencv-python-headless
+plotly
+trimesh
