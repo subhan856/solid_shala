@@ -1,145 +1,180 @@
 import streamlit as st
-import numpy as np
-import time
 from streamlit_drawable_canvas import st_canvas
-import plotly.graph_objects as go
-from PIL import Image
+import time
 
 st.set_page_config(page_title="SolidShala V6", layout="wide")
 
-st.title("🛠️ SolidShala V6 - Real CAD Feel Simulator")
-st.write("Sketch → Animate → 3D Model → Final Product 🔥")
+st.title("🛠️ SolidShala V6 - Interactive CAD Learning")
 
 # =========================
 # SIDEBAR MODE
 # =========================
-mode = st.sidebar.radio("Select Mode", ["Learn + Build Mode"])
+mode = st.sidebar.radio("Select Mode", ["Learn Mode", "Practice Mode"])
 
-tool = st.sidebar.selectbox(
-    "Select Tool",
-    ["Extrude", "Revolve (Basic)", "Cut (Basic)"]
-)
+tools = ["Extrude", "Revolve", "Cut", "Fillet", "Shell"]
 
 # =========================
-# IMAGE UPLOAD (NEW FEATURE)
+# SAFE ANIMATION FUNCTION
 # =========================
-st.sidebar.subheader("📷 Reference Image (Optional)")
-img_file = st.sidebar.file_uploader("Upload product image")
+def show_animation(title, steps):
+    st.subheader(title)
+    box = st.empty()
 
-if img_file:
-    image = Image.open(img_file)
-    st.sidebar.image(image, caption="Reference")
+    for s in steps:
+        box.info(s)
+        time.sleep(0.5)
 
-# =========================
-# CANVAS
-# =========================
-st.subheader("✏️ Step 1: Sketch Area")
-
-canvas = st_canvas(
-    fill_color="rgba(0, 255, 0, 0.2)",
-    stroke_width=3,
-    height=400,
-    width=400,
-    drawing_mode="rect",
-    key="canvas"
-)
+    box.success("Model Ready ✅")
 
 # =========================
-# EXTRUDE FUNCTION (REAL FEEL ANIMATION)
+# LEARN MODE
 # =========================
-def extrude_animation(height):
+if mode == "Learn Mode":
 
-    placeholder = st.empty()
+    st.header("📘 Learn CAD Tools")
 
-    for i in range(1, 11):
+    tool = st.selectbox("Select Tool", tools)
 
-        h = height * (i / 10)
+    st.markdown("---")
 
-        # simple box model growing
-        x = [0, 1, 1, 0, 0, 1, 1, 0]
-        y = [0, 0, 1, 1, 0, 0, 1, 1]
-        z = [0, 0, 0, 0, h, h, h, h]
+    if tool == "Extrude":
+        st.write("2D → 3D solid banata hai")
+        st.info("Example: box, brick")
 
-        fig = go.Figure(data=[
-            go.Mesh3d(
-                x=x, y=y, z=z,
-                opacity=0.6
-            )
-        ])
+    elif tool == "Revolve":
+        st.write("Shape ko rotate karke 3D banata hai")
+        st.info("Example: bottle, cup")
 
-        fig.update_layout(
-            scene=dict(aspectmode="data"),
-            margin=dict(l=0, r=0, t=0, b=0)
+    elif tool == "Cut":
+        st.write("Material remove karta hai")
+        st.info("Example: hole")
+
+    elif tool == "Fillet":
+        st.write("Edges smooth karta hai")
+
+    elif tool == "Shell":
+        st.write("Solid ko hollow banata hai")
+
+# =========================
+# PRACTICE MODE (FIXED)
+# =========================
+elif mode == "Practice Mode":
+
+    st.header("🛠️ Practice Lab")
+
+    tool = st.selectbox("Choose Tool", tools)
+
+    col1, col2 = st.columns(2)
+
+    # =========================
+    # CANVAS (FIXED KEY ISSUE)
+    # =========================
+    with col1:
+        st.subheader("✏️ Draw Sketch")
+
+        canvas = st_canvas(
+            fill_color="rgba(0, 255, 0, 0.2)",
+            stroke_width=3,
+            height=350,
+            width=350,
+            drawing_mode="rect",
+            key=f"canvas_{tool}"   # ✅ IMPORTANT FIX
         )
 
-        placeholder.plotly_chart(fig, use_container_width=True)
-        time.sleep(0.2)
-
-    return fig
-
-# =========================
-# REVOLVE SIMULATION
-# =========================
-def revolve_animation():
-
-    placeholder = st.empty()
-
-    for i in range(1, 11):
-
-        theta = np.linspace(0, 2*np.pi*i/10, 30)
-        z = np.linspace(0, 2, 2)
-
-        theta_grid, z_grid = np.meshgrid(theta, z)
-
-        r = 1
-        x = r * np.cos(theta_grid)
-        y = r * np.sin(theta_grid)
-
-        fig = go.Figure(data=[
-            go.Surface(x=x, y=y, z=z_grid, opacity=0.7)
-        ])
-
-        fig.update_layout(scene=dict(aspectmode="data"))
-
-        placeholder.plotly_chart(fig, use_container_width=True)
-        time.sleep(0.2)
-
-    return fig
-
-# =========================
-# MAIN ACTION BUTTON
-# =========================
-st.subheader("⚙️ Step 2: Build Model")
-
-if st.button("🚀 Generate 3D Model"):
-
-    st.info("Processing sketch...")
-
-    # default height
-    height = 3
-
-    # TOOL LOGIC
-    if tool == "Extrude":
-        final_model = extrude_animation(height)
-
-    elif tool == "Revolve (Basic)":
-        final_model = revolve_animation()
-
-    elif tool == "Cut (Basic)":
-        st.warning("Cut simulation (simple demo)")
-        final_model = extrude_animation(2)
-        st.error("Hole created (simulation)")
+        if canvas.image_data is not None:
+            st.caption("Sketch captured ✔")
 
     # =========================
-    # FINAL OUTPUT
+    # ACTION PANEL
     # =========================
-    st.success("✅ Final Product Ready")
+    with col2:
 
-    st.subheader("🏁 Final Model View")
-    st.plotly_chart(final_model, use_container_width=True)
+        st.subheader("⚙️ Tool Action")
 
-# =========================
-# FOOTER
-# =========================
-st.markdown("---")
-st.write("💡 SolidShala V6 - Learning CAD Like a Game Engine")
+        if st.button("🚀 Apply Tool", key=f"btn_{tool}"):
+
+            # =========================
+            # EXTRUDE
+            # =========================
+            if tool == "Extrude":
+
+                show_animation(
+                    "Extrusion Process",
+                    [
+                        "Sketch detect ho raha hai...",
+                        "Profile analyze ho raha hai...",
+                        "Height generate ho rahi hai...",
+                        "3D solid build ho raha hai..."
+                    ]
+                )
+
+                st.success("📦 Final Product: BOX CREATED")
+
+            # =========================
+            # REVOLVE
+            # =========================
+            elif tool == "Revolve":
+
+                show_animation(
+                    "Revolve Process",
+                    [
+                        "Axis detect ho raha hai...",
+                        "Profile rotate ho raha hai...",
+                        "Surface generate ho rahi hai...",
+                        "3D shape ready..."
+                    ]
+                )
+
+                st.success("🍶 Final Product: CYLINDER CREATED")
+
+            # =========================
+            # CUT
+            # =========================
+            elif tool == "Cut":
+
+                show_animation(
+                    "Cut Process",
+                    [
+                        "Solid load ho raha hai...",
+                        "Sketch apply ho raha hai...",
+                        "Material remove ho raha hai...",
+                        "Hole create ho gaya..."
+                    ]
+                )
+
+                st.success("🕳️ Final Product: CUT DONE")
+
+            # =========================
+            # FILLET
+            # =========================
+            elif tool == "Fillet":
+
+                show_animation(
+                    "Fillet Process",
+                    [
+                        "Edges detect ho rahi hain...",
+                        "Radius apply ho raha hai...",
+                        "Smooth transition ban raha hai..."
+                    ]
+                )
+
+                st.success("🔵 Final Product: SMOOTH MODEL")
+
+            # =========================
+            # SHELL
+            # =========================
+            elif tool == "Shell":
+
+                show_animation(
+                    "Shell Process",
+                    [
+                        "Solid analyze ho raha hai...",
+                        "Thickness set ho rahi hai...",
+                        "Inner material remove ho raha hai...",
+                        "Hollow object ready..."
+                    ]
+                )
+
+                st.success("🥤 Final Product: HOLLOW OBJECT")
+
+    st.info("👉 Ab ye app step-by-step CAD feel deta hai (no duplicate error)")
