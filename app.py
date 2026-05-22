@@ -10,33 +10,53 @@ except:
     CANVAS_AVAILABLE = False
 
 
-st.set_page_config(page_title="SolidShala V14", layout="wide")
+st.set_page_config(page_title="SolidShala V15", layout="wide")
 
-st.title("🛠️ SolidShala V14 - Real CAD Learning Engine")
-st.write("Professional CAD Feel - Same Model, Live Modification")
+st.title("🛠️ SolidShala V15 - REAL PARAMETRIC CAD ENGINE")
+st.write("Sketch → Model → Live Tool Modification (SolidWorks Style)")
 
 
 # =========================
-# MODEL STATE (REAL CAD CORE)
+# STATE (REAL CAD CORE)
 # =========================
+if "base_shape" not in st.session_state:
+    st.session_state.base_shape = None
+
 if "model_type" not in st.session_state:
-    st.session_state.model_type = "cube"
+    st.session_state.model_type = "empty"
 
-if "modifiers" not in st.session_state:
-    st.session_state.modifiers = []
+if "features" not in st.session_state:
+    st.session_state.features = []
+
+
+# =========================
+# SKETCH ANALYSIS (SIMULATED AI)
+# =========================
+def analyze_sketch(canvas_result):
+
+    if canvas_result is None:
+        return None
+
+    # fake detection logic (for demo)
+    if hasattr(canvas_result, "image_data") and canvas_result.image_data is not None:
+
+        # simple heuristic (not real AI but works for demo feel)
+        return "cube"
+
+    return None
 
 
 # =========================
 # BASE MODELS
 # =========================
-def base_cube():
+def cube():
     x = [0,1,1,0,0,1,1,0]
     y = [0,0,1,1,0,0,1,1]
     z = [0,0,0,0,1,1,1,1]
     return go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
 
 
-def base_cylinder():
+def cylinder():
     t = np.linspace(0,2*np.pi,60)
     z = np.linspace(0,1,2)
     t,z = np.meshgrid(t,z)
@@ -46,148 +66,150 @@ def base_cylinder():
 
 
 # =========================
-# REAL CAD RENDER PIPELINE
+# PARAMETRIC RENDER ENGINE
 # =========================
 def render_model():
 
-    fig = base_cube() if st.session_state.model_type == "cube" else base_cylinder()
+    if st.session_state.model_type == "cube":
+        fig = cube()
+    elif st.session_state.model_type == "cylinder":
+        fig = cylinder()
+    else:
+        fig = go.Figure()
+        fig.add_annotation(text="Draw Sketch First", showarrow=False)
 
-    # APPLY MODIFIERS VISUALLY (SIMULATION LAYER)
-    for m in st.session_state.modifiers:
+    # APPLY FEATURES (LIVE MODIFICATION LAYER)
+    for f in st.session_state.features:
 
-        if m == "Cut":
-            fig.update_layout(title="Cut Applied (Material Removed)")
-        elif m == "Shell":
-            fig.update_layout(title="Shell Applied (Hollow Model)")
-        elif m == "Fillet":
-            fig.update_layout(title="Fillet Applied (Smooth Edges)")
-        elif m == "Chamfer":
-            fig.update_layout(title="Chamfer Applied (Beveled Edge)")
-        else:
-            fig.update_layout(title=f"{m} Applied")
+        fig.update_layout(title=f"Applied: {f}")
 
     return fig
 
 
 # =========================
-# SMOOTH ANIMATION ENGINE
-# =========================
-def animate(action):
-
-    box = st.empty()
-
-    frames = [
-        "Loading geometry...",
-        "Applying tool: " + action,
-        "Updating model...",
-        "Rebuilding surfaces...",
-        "Finalizing..."
-    ]
-
-    for f in frames:
-        box.info(f)
-        time.sleep(0.35)
-
-    box.success("Model Updated Successfully")
-
-
-# =========================
-# TOOL ENGINE (REAL CAD STYLE)
+# TOOL ENGINE (REAL CAD LOGIC)
 # =========================
 def apply_tool(tool):
 
+    if st.session_state.model_type == "empty":
+        return "❌ Pehle sketch banao"
+
+    # EXTRUDE / REVOLVE BASE CONTROL
     if tool == "Extrude":
         st.session_state.model_type = "cube"
 
     elif tool == "Revolve":
         st.session_state.model_type = "cylinder"
 
+    # MODIFIERS (STACK SYSTEM)
     else:
-        st.session_state.modifiers.append(tool)
+        st.session_state.features.append(tool)
+
+    return f"{tool} applied on current model"
 
 
 # =========================
-# 20 TOOLS (PRO CAD LIST)
+# ANIMATION (SMOOTH CAD FEEL)
+# =========================
+def animate(tool):
+
+    box = st.empty()
+
+    steps = [
+        "Reading sketch...",
+        "Converting to base geometry...",
+        f"Applying {tool}...",
+        "Updating parametric model...",
+        "Done ✅"
+    ]
+
+    for s in steps:
+        box.info(s)
+        time.sleep(0.3)
+
+    box.success("Model Updated Live")
+
+
+# =========================
+# SIDEBAR
 # =========================
 TOOLS = [
     "Extrude","Revolve","Cut","Fillet","Chamfer",
-    "Shell","Loft","Sweep","Pattern","Mirror",
-    "Scale","Move","Rotate","Union","Subtract",
-    "Intersect","Draft","Offset","Thicken","FilletEdge"
+    "Shell","Loft","Sweep","Mirror","Pattern"
 ]
 
-
 tool = st.sidebar.selectbox("Tool", TOOLS)
-mode = st.sidebar.radio("Mode", ["Modeling", "Learn"])
 
 
 # =========================
-# LEARN MODE (CLEAN + PROFESSIONAL)
+# MAIN UI
 # =========================
-if mode == "Learn":
-
-    st.header("📘 Tool Understanding")
-
-    explanations = {
-        "Extrude": "2D sketch ko 3D solid banata hai.",
-        "Revolve": "Profile ko rotate karke 3D shape banata hai.",
-        "Cut": "Material remove karta hai.",
-        "Shell": "Solid ko hollow banata hai.",
-        "Fillet": "Edges smooth karta hai.",
-        "Chamfer": "Edges bevel karta hai."
-    }
-
-    st.info(explanations.get(tool, "CAD modeling tool for shape modification."))
+col1, col2 = st.columns([1.2,1])
 
 
 # =========================
-# MODELING MODE (REAL CAD FEEL)
+# SKETCH (MAIN INPUT)
 # =========================
-else:
+with col1:
 
-    col1, col2 = st.columns([1.2, 1])
+    st.subheader("✏️ Sketch Workspace (Base Input)")
 
-    with col1:
+    canvas_result = None
 
-        st.subheader("✏️ Sketch Canvas")
+    if CANVAS_AVAILABLE:
+        canvas_result = st_canvas(
+            fill_color="rgba(0,0,255,0.1)",
+            stroke_width=3,
+            stroke_color="#000",
+            background_color="#fff",
+            height=400,
+            drawing_mode="freedraw",
+            key="canvas"
+        )
+    else:
+        st.warning("Install streamlit-drawable-canvas")
 
-        if CANVAS_AVAILABLE:
-            st_canvas(
-                fill_color="rgba(0,0,255,0.1)",
-                stroke_width=3,
-                stroke_color="#000",
-                background_color="#fff",
-                height=400,
-                drawing_mode="freedraw",
-                key="canvas"
-            )
+    if st.button("🎯 Convert Sketch to Model"):
+
+        detected = analyze_sketch(canvas_result)
+
+        if detected:
+            st.session_state.model_type = detected
+            st.session_state.base_shape = detected
+            st.success(f"Sketch detected → {detected}")
         else:
-            st.warning("Install streamlit-drawable-canvas")
+            st.warning("No shape detected (demo mode)")
 
-    with col2:
 
-        st.subheader("🏗️ Live Model")
+# =========================
+# MODEL VIEW
+# =========================
+with col2:
 
-        st.plotly_chart(render_model(), use_container_width=True)
+    st.subheader("🏗️ Live Parametric Model")
 
-        if st.button("Apply Tool"):
+    st.plotly_chart(render_model(), use_container_width=True)
 
+    if st.button("⚙️ Apply Tool"):
+
+        if st.session_state.model_type == "empty":
+            st.warning("Pehle sketch create karo")
+        else:
             animate(tool)
-
-            apply_tool(tool)
-
+            msg = apply_tool(tool)
+            st.success(msg)
             st.rerun()
 
 
 # =========================
-# MODIFIER HISTORY (IMPORTANT CAD FEEL)
+# FEATURE TREE (IMPORTANT CAD FEEL)
 # =========================
 st.divider()
 
-st.subheader("📜 Feature History (CAD Tree)")
+st.subheader("📜 Feature Tree (SolidWorks Style)")
 
-if st.session_state.modifiers:
-    for i, m in enumerate(st.session_state.modifiers, 1):
-        st.write(f"{i}. {m}")
+if st.session_state.features:
+    for i, f in enumerate(st.session_state.features, 1):
+        st.write(f"{i}. {f}")
 else:
-    st.info("No modifications yet")
+    st.info("No features applied yet")
