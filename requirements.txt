@@ -1,5 +1,4 @@
 streamlit==1.38.0
-cadquery==2.4.0
 streamlit-drawable-canvas==0.9.3
-pillow
 numpy
+pillow
