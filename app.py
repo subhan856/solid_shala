@@ -1,166 +1,144 @@
 import streamlit as st
 import numpy as np
+import trimesh
 import plotly.graph_objects as go
-from datetime import datetime
 
-# =========================
+# =====================================================
 # PAGE
-# =========================
-st.set_page_config(page_title="SolidShala Final", layout="wide")
+# =====================================================
+st.set_page_config(page_title="SolidShala REAL CAD", layout="wide")
 
-st.title("🛠️ SolidShala Final CAD Simulator")
-st.write("Draw → Select Tool → Build Model")
+st.title("🛠️ SolidShala REAL CAD Engine (Mini SolidWorks)")
+st.write("True geometry-based modeling (not fake UI)")
 
-# =========================
-# SAFE STATE
-# =========================
-if "model" not in st.session_state:
-    st.session_state.model = {
-        "shape": None,
-        "radius": 1.0,
-        "height": 1.0,
-        "cut": 0.0,
-        "chamfer": 0.0,
-        "scale": 1.0
-    }
+# =====================================================
+# STATE
+# =====================================================
+if "mesh" not in st.session_state:
+    st.session_state.mesh = None
 
-m = st.session_state.model
+if "shape" not in st.session_state:
+    st.session_state.shape = None
 
-# =========================
-# SHAPES
-# =========================
-def make_circle():
-    m["shape"] = "circle"
+# =====================================================
+# CREATE BASE SHAPES
+# =====================================================
+def create_box():
+    mesh = trimesh.creation.box(extents=(1,1,1))
+    st.session_state.mesh = mesh
+    st.session_state.shape = "box"
 
-def make_square():
-    m["shape"] = "square"
+def create_cylinder():
+    mesh = trimesh.creation.cylinder(radius=0.5, height=1.0)
+    st.session_state.mesh = mesh
+    st.session_state.shape = "cylinder"
 
-# =========================
-# TOOLS
-# =========================
+# =====================================================
+# TOOLS (REAL GEOMETRY)
+# =====================================================
 def apply_tool(tool):
 
+    mesh = st.session_state.mesh
+
+    if mesh is None:
+        return
+
+    # -----------------------
+    # EXTRUDE
+    # -----------------------
     if tool == "Extrude":
-        m["height"] += 0.5
+        mesh.apply_scale((1,1,1.2))
 
+    # -----------------------
+    # CUT (slice top)
+    # -----------------------
     elif tool == "Cut":
-        m["cut"] += 0.2
+        plane_origin = [0,0,0.5]
+        plane_normal = [0,0,1]
 
-    elif tool == "Chamfer":
-        m["chamfer"] += 0.1
+        mesh = mesh.slice_plane(plane_origin, plane_normal)
+        st.session_state.mesh = mesh
 
+    # -----------------------
+    # SCALE
+    # -----------------------
     elif tool == "Scale":
-        m["scale"] += 0.1
+        mesh.apply_scale(1.2)
 
-# =========================
-# SIMPLE SHAPE DETECT (SAFE)
-# =========================
-def detect_shape():
-    if np.random.rand() > 0.5:
-        make_circle()
-        return "circle"
-    else:
-        make_square()
-        return "square"
+    # -----------------------
+    # FLIP / MIRROR
+    # -----------------------
+    elif tool == "Mirror":
+        mesh.apply_scale([-1,1,1])
 
-# =========================
-# RENDER MODEL (STABLE)
-# =========================
-def render():
+    st.session_state.mesh = mesh
 
-    fig = go.Figure()
+# =====================================================
+# RENDER MESH
+# =====================================================
+def show_mesh(mesh):
 
-    if m["shape"] == "circle":
+    if mesh is None:
+        return go.Figure()
 
-        r = max(0.2, m["radius"] - m["cut"])
-        r *= m["scale"]
-        h = m["height"]
+    vertices = mesh.vertices
+    faces = mesh.faces
 
-        t = np.linspace(0, 2*np.pi, 40)
-        z = np.linspace(0, h, 15)
+    x, y, z = vertices[:,0], vertices[:,1], vertices[:,2]
 
-        t, z = np.meshgrid(t, z)
+    i, j, k = faces[:,0], faces[:,1], faces[:,2]
 
-        x = r * np.cos(t)
-        y = r * np.sin(t)
-
-        fig.add_trace(go.Surface(x=x, y=y, z=z, opacity=0.9))
-
-    elif m["shape"] == "square":
-
-        s = m["scale"]
-        h = m["height"]
-        c = m["chamfer"]
-
-        size = 1 * s
-
-        x = [0, size, size, 0, 0, size, size, 0]
-        y = [0, 0, size, size, 0, 0, size, size]
-        z = [0, 0, 0, 0, h, h, h, h]
-
-        fig.add_trace(go.Mesh3d(x=x, y=y, z=z, opacity=0.7))
-
-        # chamfer effect (simple visual)
-        if c > 0:
-            fig.add_trace(go.Mesh3d(
-                x=[c, size-c, size, 0],
-                y=[0, 0, size, size],
-                z=[h, h, h, h],
-                opacity=0.3
-            ))
-
-    else:
-        fig.add_annotation(
-            text="Draw Shape First",
-            showarrow=False,
-            font=dict(size=20)
+    fig = go.Figure(data=[
+        go.Mesh3d(
+            x=x, y=y, z=z,
+            i=i, j=j, k=k,
+            opacity=0.8
         )
+    ])
 
     fig.update_layout(
-        height=550,
-        scene=dict(aspectmode="data"),
-        margin=dict(l=0, r=0, t=20, b=0)
+        height=600,
+        margin=dict(l=0,r=0,t=20,b=0),
+        scene=dict(aspectmode="data")
     )
 
     return fig
 
-# =========================
+# =====================================================
 # UI
-# =========================
+# =====================================================
 col1, col2 = st.columns(2)
 
 with col1:
 
-    st.subheader("✏️ Sketch")
+    st.subheader("🧱 Create Shape")
 
-    if st.button("Draw Circle"):
-        make_circle()
+    if st.button("Box"):
+        create_box()
 
-    if st.button("Draw Square"):
-        make_square()
+    if st.button("Cylinder"):
+        create_cylinder()
 
-    if st.button("Auto Detect Shape"):
-        st.success(f"Detected: {detect_shape()}")
+    st.subheader("📦 Model View")
 
-    st.plotly_chart(render(), use_container_width=True)
+    st.plotly_chart(show_mesh(st.session_state.mesh), use_container_width=True)
 
 with col2:
 
     st.subheader("⚙️ Tools")
 
-    tool = st.selectbox("Select Tool",
-        ["Extrude", "Cut", "Chamfer", "Scale"]
+    tool = st.selectbox(
+        "Select Tool",
+        ["Extrude", "Cut", "Scale", "Mirror"]
     )
 
     if st.button("Apply Tool"):
+
         apply_tool(tool)
         st.success(f"{tool} applied")
+
         st.rerun()
 
-    st.subheader("📊 Model Data")
+    st.subheader("🧠 Status")
 
-    st.write("Shape:", m["shape"])
-    st.write("Height:", m["height"])
-    st.write("Cut:", m["cut"])
-    st.write("Chamfer:", m["chamfer"])
-    st.write("Scale:", m["scale"])
+    st.write("Shape:", st.session_state.shape)
