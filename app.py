@@ -166,8 +166,23 @@ elif page == "📘 Tool 1 - Lamba Karo":
             key="canvas",
         )
 
-   with col2:
+  col1, col2 = st.columns(2)
 
+with col1:
+    st.subheader("2D Sketch")
+
+    canvas_result = st_canvas(
+        fill_color="rgba(0,255,0,0.3)",
+        stroke_width=3,
+        stroke_color="#ffffff",
+        background_color="#1e293b",
+        height=300,
+        width=400,
+        drawing_mode="rect",
+        key="canvas",
+    )
+
+with col2:
     st.subheader("3D Controls")
 
     length = st.slider("Length", 10, 100, 50)
