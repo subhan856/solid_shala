@@ -1,5 +1,4 @@
 import streamlit as st
-import cadquery as cq
 from streamlit_drawable_canvas import st_canvas
 import os
 
@@ -177,21 +176,19 @@ elif page == "📘 Tool 1 - Lamba Karo":
 
         if st.button("🚀 Lamba Karo"):
 
-            result = cq.Workplane("XY").box(length, width, height)
+    st.success("✅ 3D Part Ban Gaya!")
+    
+    st.info(f'''
+    Length: {length} mm
+    
+    Width: {width} mm
+    
+    Height: {height} mm
+    ''')
 
-            file_name = "solidshala_part.step"
-            cq.exporters.export(result, file_name)
+    st.balloons()
 
-            st.success("✅ 3D Part Ban Gaya!")
-            st.info("Tumne abhi apna pehla CAD part banaya 🔥")
-
-            with open(file_name, "rb") as f:
-                st.download_button(
-                    "⬇️ STEP File Download Karo",
-                    f,
-                    file_name=file_name
-                )
-
+    st.write("🧊 Imagine karo ye ab ek 3D Box ban gaya.")
     # =========================
     # STAGE 4
     # =========================
