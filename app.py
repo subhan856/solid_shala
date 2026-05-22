@@ -3,10 +3,9 @@ import numpy as np
 import plotly.graph_objects as go
 import time
 from datetime import datetime
-import cv2
 
 # =========================================================
-# OPTIONAL DRAWING CANVAS
+# OPTIONAL CANVAS
 # =========================================================
 try:
     from streamlit_drawable_canvas import st_canvas
@@ -15,10 +14,19 @@ except:
     CANVAS_AVAILABLE = False
 
 # =========================================================
+# OPTIONAL AI DETECTION
+# =========================================================
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except:
+    CV2_AVAILABLE = False
+
+# =========================================================
 # PAGE CONFIG
 # =========================================================
 st.set_page_config(
-    page_title="SolidShala AI CAD",
+    page_title="SolidShala Ultimate AI CAD",
     layout="wide"
 )
 
@@ -40,6 +48,7 @@ st.markdown("""
     font-size: 16px;
     background-color: #2563eb;
     color: white;
+    border: none;
 }
 
 .block {
@@ -51,8 +60,15 @@ st.markdown("""
 
 .metric-box {
     background: #1e293b;
-    padding: 12px;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.tool-box {
+    background: #1f2937;
+    padding: 10px;
     border-radius: 10px;
+    margin-bottom: 8px;
 }
 
 </style>
@@ -61,8 +77,8 @@ st.markdown("""
 # =========================================================
 # TITLE
 # =========================================================
-st.title("🛠️ SolidShala AI CAD Engine")
-st.write("Sketch → AI Detection → CAD Model → Tool Modifications")
+st.title("🛠️ SolidShala Ultimate AI CAD")
+st.write("Sketch → AI Detection → CAD Modeling → Learning Engine")
 
 # =========================================================
 # SAFE SESSION STATE
@@ -70,12 +86,34 @@ st.write("Sketch → AI Detection → CAD Model → Tool Modifications")
 if "model" not in st.session_state or st.session_state.model is None:
 
     st.session_state.model = {
+
         "shape": None,
+
         "radius": 1.0,
+
         "width": 1.0,
+
         "height": 1.0,
+
         "cut_depth": 0.0,
-        "features": [],
+
+        "chamfer": 0.0,
+
+        "fillet": 0.0,
+
+        "shell": 0.0,
+
+        "mirror": False,
+
+        "pattern": 1,
+
+        "draft": 0,
+
+        "thickness": 1.0,
+
+        "scale": 1.0,
+
+        "features": []
     }
 
 if "history" not in st.session_state:
@@ -90,42 +128,42 @@ if "score" not in st.session_state:
 LEARNING = {
 
     "Extrude": {
-        "desc": "2D sketch ko 3D solid banata hai.",
-        "usage": "Boxes, plates, machine parts",
+        "desc": "2D sketch ko 3D solid mein convert karta hai.",
+        "usage": "Machine parts, boxes, plates",
         "questions": [
             "Extrude kya karta hai?",
-            "2D ko 3D kaun banata hai?",
+            "2D ko 3D kis tool se banate hain?",
             "Extrude ka use kaha hota hai?"
         ]
     },
 
     "Cut": {
         "desc": "Material remove karta hai.",
-        "usage": "Holes and slots",
+        "usage": "Holes, slots",
         "questions": [
-            "Cut ka purpose kya hai?",
+            "Cut tool ka purpose kya hai?",
             "Hole kis tool se banta hai?",
-            "Material remove ka tool?"
+            "Material remove tool?"
         ]
     },
 
     "Shell": {
         "desc": "Object ko hollow banata hai.",
-        "usage": "Bottle, plastic body",
+        "usage": "Bottle, plastic bodies",
         "questions": [
             "Shell kya karta hai?",
-            "Bottle hollow kaise hoti hai?",
+            "Object hollow kaise hota hai?",
             "Thickness remove tool?"
         ]
     },
 
     "Fillet": {
-        "desc": "Sharp edge smooth karta hai.",
-        "usage": "Safe rounded edges",
+        "desc": "Sharp edges smooth karta hai.",
+        "usage": "Rounded safe edges",
         "questions": [
-            "Fillet edge kya hota hai?",
+            "Fillet kya karta hai?",
             "Rounded edge tool?",
-            "Smooth edge ka tool?"
+            "Smooth corner tool?"
         ]
     },
 
@@ -144,25 +182,55 @@ LEARNING = {
 # TOOL LIST
 # =========================================================
 TOOLS = [
+
     "Extrude",
+
     "Cut",
+
     "Shell",
+
     "Fillet",
+
     "Chamfer",
+
     "Scale",
+
     "Move",
+
     "Rotate",
+
     "Mirror",
+
     "Pattern",
+
     "Loft",
+
     "Sweep",
+
     "Offset",
+
     "Thicken",
+
     "Draft",
+
     "Union",
+
     "Subtract",
+
     "Intersect",
+
     "Revolve",
+
+    "Boss",
+
+    "Rib",
+
+    "HoleWizard",
+
+    "Split",
+
+    "Combine",
+
     "Reset"
 ]
 
@@ -174,9 +242,15 @@ def detect_shape(image_data):
     if image_data is None:
         return None
 
+    if not CV2_AVAILABLE:
+        return None
+
     img = image_data.astype("uint8")
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.cvtColor(
+        img,
+        cv2.COLOR_BGR2GRAY
+    )
 
     _, thresh = cv2.threshold(
         gray,
@@ -206,25 +280,25 @@ def detect_shape(image_data):
 
         sides = len(approx)
 
-        # square
         if sides == 4:
             return "square"
 
-        # circle
         elif sides > 6:
             return "circle"
 
     return None
 
 # =========================================================
-# MODEL CREATION
+# CREATE SHAPES
 # =========================================================
 def create_circle():
 
     model = st.session_state.model
 
     model["shape"] = "circle"
+
     model["radius"] = 1.0
+
     model["height"] = 1.0
 
     st.session_state.model = model
@@ -234,10 +308,159 @@ def create_square():
     model = st.session_state.model
 
     model["shape"] = "square"
+
     model["width"] = 1.0
+
     model["height"] = 1.0
 
     st.session_state.model = model
+
+# =========================================================
+# BUILD ANIMATION
+# =========================================================
+def auto_build_animation():
+
+    bar = st.progress(0)
+
+    for i in range(100):
+
+        time.sleep(0.01)
+
+        bar.progress(i + 1)
+
+    st.success("CAD Product Generated ✅")
+
+# =========================================================
+# TOOL ANIMATION
+# =========================================================
+def animate(tool):
+
+    box = st.empty()
+
+    steps = [
+
+        "Reading AI Sketch...",
+
+        f"Applying {tool}...",
+
+        "Calculating Geometry...",
+
+        "Updating Dimensions...",
+
+        "Building CAD Product..."
+    ]
+
+    for s in steps:
+
+        box.info(s)
+
+        time.sleep(0.3)
+
+    box.success("Tool Applied Successfully")
+
+# =========================================================
+# TOOL ENGINE
+# =========================================================
+def apply_tool(tool):
+
+    model = st.session_state.model
+
+    # =============================================
+    # BASIC TOOLS
+    # =============================================
+    if tool == "Extrude":
+
+        model["height"] += 0.5
+
+    elif tool == "Cut":
+
+        model["cut_depth"] += 0.2
+
+        model["height"] -= 0.1
+
+    elif tool == "Shell":
+
+        model["shell"] += 0.15
+
+    elif tool == "Fillet":
+
+        model["fillet"] += 0.08
+
+    elif tool == "Chamfer":
+
+        model["chamfer"] += 0.08
+
+    elif tool == "Scale":
+
+        model["scale"] += 0.1
+
+    elif tool == "Mirror":
+
+        model["mirror"] = True
+
+    elif tool == "Pattern":
+
+        model["pattern"] += 1
+
+    elif tool == "Draft":
+
+        model["draft"] += 2
+
+    elif tool == "Thicken":
+
+        model["thickness"] += 0.1
+
+    elif tool == "Reset":
+
+        model["height"] = 1.0
+
+        model["radius"] = 1.0
+
+        model["cut_depth"] = 0.0
+
+        model["chamfer"] = 0.0
+
+        model["fillet"] = 0.0
+
+        model["shell"] = 0.0
+
+        model["pattern"] = 1
+
+        model["features"] = []
+
+    # =============================================
+    # EXTRA FEATURES
+    # =============================================
+    elif tool == "Boss":
+
+        model["height"] += 1
+
+    elif tool == "Rib":
+
+        model["thickness"] += 0.2
+
+    elif tool == "HoleWizard":
+
+        model["cut_depth"] += 0.5
+
+    elif tool == "Combine":
+
+        model["pattern"] += 2
+
+    elif tool == "Split":
+
+        model["height"] *= 0.8
+
+    model["features"].append(tool)
+
+    st.session_state.model = model
+
+    st.session_state.history.append({
+
+        "tool": tool,
+
+        "time": str(datetime.now())
+    })
 
 # =========================================================
 # CAD MODEL RENDER
@@ -246,58 +469,134 @@ def render_model():
 
     model = st.session_state.model
 
-    # =========================
-    # CIRCLE
-    # =========================
+    # =============================================
+    # CIRCLE MODEL
+    # =============================================
     if model["shape"] == "circle":
 
+        scale = model["scale"]
+
+        radius = (
+            model["radius"]
+            - model["cut_depth"] * 0.1
+        )
+
+        radius *= scale
+
         t = np.linspace(0, 2*np.pi, 100)
-        z = np.linspace(0, model["height"], 2)
+
+        z = np.linspace(
+            0,
+            model["height"],
+            2
+        )
 
         t, z = np.meshgrid(t, z)
 
-        x = model["radius"] * np.cos(t)
-        y = model["radius"] * np.sin(t)
+        x = radius * np.cos(t)
 
-        fig = go.Figure(
-            data=[
-                go.Surface(
-                    x=x,
-                    y=y,
-                    z=z
-                )
-            ]
-        )
+        y = radius * np.sin(t)
 
-    # =========================
-    # SQUARE
-    # =========================
-    elif model["shape"] == "square":
+        fig = go.Figure()
 
-        x = [0,1,1,0,0,1,1,0]
-        y = [0,0,1,1,0,0,1,1]
+        fig.add_trace(go.Surface(
+            x=x,
+            y=y,
+            z=z
+        ))
 
-        z = [
-            0,
-            0,
-            0,
-            0,
-            model["height"],
-            model["height"],
-            model["height"],
-            model["height"]
-        ]
+        # =========================================
+        # SHELL EFFECT
+        # =========================================
+        if model["shell"] > 0:
 
-        fig = go.Figure(
-            data=[
-                go.Mesh3d(
-                    x=x,
+            inner_radius = radius - model["shell"] * 0.2
+
+            x2 = inner_radius * np.cos(t)
+
+            y2 = inner_radius * np.sin(t)
+
+            fig.add_trace(go.Surface(
+                x=x2,
+                y=y2,
+                z=z,
+                opacity=0.4
+            ))
+
+        # =========================================
+        # PATTERN EFFECT
+        # =========================================
+        if model["pattern"] > 1:
+
+            for i in range(1, model["pattern"]):
+
+                fig.add_trace(go.Surface(
+                    x=x + (i * 2),
                     y=y,
                     z=z,
-                    opacity=0.5
-                )
-            ]
-        )
+                    opacity=0.3
+                ))
+
+    # =============================================
+    # SQUARE MODEL
+    # =============================================
+    elif model["shape"] == "square":
+
+        h = model["height"]
+
+        c = model["chamfer"]
+
+        scale = model["scale"]
+
+        x = np.array([
+            c,1-c,1,1,1-c,c,0,0,
+            c,1-c,1,1,1-c,c,0,0
+        ]) * scale
+
+        y = np.array([
+            0,0,c,1-c,1,1,1-c,c,
+            0,0,c,1-c,1,1,1-c,c
+        ]) * scale
+
+        z = np.array([
+            0,0,0,0,0,0,0,0,
+            h,h,h,h,h,h,h,h
+        ])
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Mesh3d(
+            x=x,
+            y=y,
+            z=z,
+            opacity=0.6
+        ))
+
+        # =========================================
+        # MIRROR EFFECT
+        # =========================================
+        if model["mirror"]:
+
+            fig.add_trace(go.Mesh3d(
+                x=-x,
+                y=y,
+                z=z,
+                opacity=0.4
+            ))
+
+        # =========================================
+        # PATTERN EFFECT
+        # =========================================
+        if model["pattern"] > 1:
+
+            for i in range(1, model["pattern"]):
+
+                fig.add_trace(go.Mesh3d(
+                    x=x + (i * 1.5),
+                    y=y,
+                    z=z,
+                    opacity=0.3
+                ))
 
     else:
 
@@ -310,87 +609,13 @@ def render_model():
         )
 
     fig.update_layout(
-        height=500,
+
+        height=550,
+
         margin=dict(l=0,r=0,t=30,b=0)
     )
 
     return fig
-
-# =========================================================
-# TOOL ANIMATION
-# =========================================================
-def animate(tool):
-
-    box = st.empty()
-
-    steps = [
-        "Reading AI Sketch...",
-        f"Applying {tool}...",
-        "Updating Geometry...",
-        "Calculating Dimensions...",
-        "Rendering Final Product..."
-    ]
-
-    for s in steps:
-
-        box.info(s)
-
-        time.sleep(0.3)
-
-    box.success("Tool Applied Successfully ✅")
-
-# =========================================================
-# TOOL ENGINE
-# =========================================================
-def apply_tool(tool):
-
-    model = st.session_state.model
-
-    if tool == "Extrude":
-
-        model["height"] += 0.5
-
-    elif tool == "Cut":
-
-        model["cut_depth"] += 0.3
-        model["height"] -= 0.2
-
-    elif tool == "Shell":
-
-        model["cut_depth"] += 0.5
-
-    elif tool == "Scale":
-
-        model["height"] *= 1.1
-
-        if model["shape"] == "circle":
-            model["radius"] *= 1.1
-
-    elif tool == "Fillet":
-
-        if model["shape"] == "circle":
-            model["radius"] *= 1.05
-
-    elif tool == "Chamfer":
-
-        if model["shape"] == "square":
-            model["width"] *= 0.95
-
-    elif tool == "Reset":
-
-        model["features"] = []
-        model["height"] = 1
-        model["radius"] = 1
-        model["cut_depth"] = 0
-
-    model["features"].append(tool)
-
-    st.session_state.model = model
-
-    st.session_state.history.append({
-        "tool": tool,
-        "time": str(datetime.now())
-    })
 
 # =========================================================
 # SIDEBAR
@@ -398,7 +623,9 @@ def apply_tool(tool):
 st.sidebar.title("🎛️ CAD Controls")
 
 mode = st.sidebar.radio(
-    "Mode",
+
+    "Choose Mode",
+
     [
         "Modeling Mode",
         "Learning Mode",
@@ -407,7 +634,9 @@ mode = st.sidebar.radio(
 )
 
 selected_tool = st.sidebar.selectbox(
+
     "Select Tool",
+
     TOOLS
 )
 
@@ -416,30 +645,37 @@ selected_tool = st.sidebar.selectbox(
 # =========================================================
 if mode == "Modeling Mode":
 
-    col1, col2 = st.columns([1.2,1])
+    left, right = st.columns([1.3,1])
 
-    # =====================================================
+    # =============================================
     # LEFT SIDE
-    # =====================================================
-    with col1:
+    # =============================================
+    with left:
 
         st.subheader("✏️ AI Sketch Canvas")
 
         if CANVAS_AVAILABLE:
 
             canvas_result = st_canvas(
+
                 fill_color="rgba(0,0,255,0.1)",
+
                 stroke_width=5,
+
                 stroke_color="#FFFFFF",
+
                 background_color="#111827",
+
                 height=400,
+
                 drawing_mode="freedraw",
+
                 key="canvas"
             )
 
-            # =============================================
+            # =====================================
             # AI DETECTION
-            # =============================================
+            # =====================================
             if st.button("🤖 AI Detect Shape"):
 
                 detected = detect_shape(
@@ -450,24 +686,24 @@ if mode == "Modeling Mode":
 
                     create_circle()
 
-                    st.success("AI detected: Circle Shape")
+                    st.success("AI detected: Circle")
 
                 elif detected == "square":
 
                     create_square()
 
-                    st.success("AI detected: Square Shape")
+                    st.success("AI detected: Square")
 
                 else:
 
                     st.warning(
-                        "Shape not detected properly.\nTry bigger drawing."
+                        "Shape not detected. Draw bigger shape."
                     )
 
         else:
 
-            st.warning(
-                "Install:\n\npip install streamlit-drawable-canvas"
+            st.error(
+                "Install streamlit-drawable-canvas"
             )
 
         st.subheader("🏗️ Final CAD Product")
@@ -477,14 +713,14 @@ if mode == "Modeling Mode":
             use_container_width=True
         )
 
-    # =====================================================
+    # =============================================
     # RIGHT SIDE
-    # =====================================================
-    with col2:
-
-        st.subheader("📏 AI Dimensions")
+    # =============================================
+    with right:
 
         model = st.session_state.model
+
+        st.subheader("📏 AI Dimensions")
 
         st.markdown(f"""
 <div class="metric-box">
@@ -497,22 +733,88 @@ if mode == "Modeling Mode":
 
 <p>Cut Depth: {round(model["cut_depth"],2)}</p>
 
+<p>Chamfer: {round(model["chamfer"],2)}</p>
+
+<p>Shell: {round(model["shell"],2)}</p>
+
+<p>Scale: {round(model["scale"],2)}</p>
+
 </div>
 """, unsafe_allow_html=True)
 
+        # =========================================
+        # AI ANALYSIS
+        # =========================================
+        st.subheader("🤖 AI CAD Analysis")
+
+        if model["shape"] == "circle":
+
+            volume = round(
+
+                np.pi *
+                model["radius"]**2 *
+                model["height"],
+
+                2
+            )
+
+            st.success(
+                f"Estimated Volume: {volume}"
+            )
+
+        elif model["shape"] == "square":
+
+            volume = round(
+
+                model["height"] *
+                model["scale"],
+
+                2
+            )
+
+            st.success(
+                f"Estimated Volume: {volume}"
+            )
+
+        # =========================================
+        # AI SUGGESTIONS
+        # =========================================
+        if model["cut_depth"] > 0.5:
+
+            st.info(
+                "AI Suggestion: Apply Fillet"
+            )
+
+        if model["height"] > 2:
+
+            st.info(
+                "AI Suggestion: Apply Shell"
+            )
+
+        if model["pattern"] > 2:
+
+            st.info(
+                "AI Suggestion: Use Mirror"
+            )
+
+        # =========================================
+        # APPLY TOOL
+        # =========================================
         st.subheader("⚙️ Apply CAD Tool")
 
-        if st.button("🚀 Apply Selected Tool"):
+        if st.button("🚀 Apply Tool"):
 
             if model["shape"] is None:
 
                 st.warning(
-                    "Draw shape and detect it first"
+                    "Draw shape first"
                 )
 
             else:
 
                 animate(selected_tool)
+
+                auto_build_animation()
 
                 apply_tool(selected_tool)
 
@@ -520,12 +822,15 @@ if mode == "Modeling Mode":
 
                 st.rerun()
 
-        st.subheader("🧠 Active CAD Features")
+        # =========================================
+        # FEATURES
+        # =========================================
+        st.subheader("🧠 Feature Stack")
 
         for feature in model["features"][-10:]:
 
             st.markdown(f"""
-<div class="block">
+<div class="tool-box">
 ✅ {feature}
 </div>
 """, unsafe_allow_html=True)
@@ -561,7 +866,7 @@ elif mode == "Learning Mode":
     else:
 
         st.info(
-            "This CAD tool modifies geometry."
+            "This tool modifies geometry."
         )
 
 # =========================================================
@@ -569,7 +874,7 @@ elif mode == "Learning Mode":
 # =========================================================
 else:
 
-    st.header("📜 CAD Feature History")
+    st.header("📜 CAD History")
 
     if st.session_state.history:
 
