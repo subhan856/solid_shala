@@ -174,21 +174,21 @@ elif page == "📘 Tool 1 - Lamba Karo":
         width = st.slider("Width", 10, 100, 20)
         height = st.slider("Motai (Extrude)", 1, 50, 10)
 
-        if st.button("🚀 Lamba Karo"):
+      if st.button("🚀 Lamba Karo"):
 
-    st.success("✅ 3D Part Ban Gaya!")
-    
-    st.info(f'''
-    Length: {length} mm
-    
-    Width: {width} mm
-    
-    Height: {height} mm
-    ''')
+         st.success("✅ 3D Part Ban Gaya!")
 
-    st.balloons()
+        st.info(f"""
+        Length: {length} mm
 
-    st.write("🧊 Imagine karo ye ab ek 3D Box ban gaya.")
+        Width: {width} mm
+
+        Height: {height} mm
+        """)
+
+        st.balloons()
+
+        st.write("🧊 Imagine karo ye ab ek 3D Box ban gaya.")
     # =========================
     # STAGE 4
     # =========================
