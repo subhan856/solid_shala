@@ -1,5 +1,1 @@
 streamlit
-numpy
-plotly
-trimesh
-scipy
