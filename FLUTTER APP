@@ -1,0 +1,7 @@
+// Flutter frontend (concept)
+class CADApp {
+  void login() {}
+  void openSketchCanvas() {}
+  void callAITutor() {}
+  void render3D() {}
+}
