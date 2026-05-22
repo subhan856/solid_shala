@@ -1,180 +1,140 @@
 import streamlit as st
-from streamlit_drawable_canvas import st_canvas
 import time
+import plotly.graph_objects as go
+import numpy as np
 
 st.set_page_config(page_title="SolidShala V6", layout="wide")
 
-st.title("🛠️ SolidShala V6 - Interactive CAD Learning")
+st.title("🛠️ SolidShala V6 - Learning Engine")
+st.write("Sketch → Animate → 3D Model → Quiz")
 
 # =========================
-# SIDEBAR MODE
+# TOOL DATABASE (SCALABLE)
 # =========================
-mode = st.sidebar.radio("Select Mode", ["Learn Mode", "Practice Mode"])
+TOOLS = {
+    "Extrude": {
+        "desc": "2D shape ko 3D solid banata hai",
+        "quiz": [
+            ("Extrude kya karta hai?", "2D → 3D"),
+            ("Example?", "Box"),
+        ]
+    },
+    "Revolve": {
+        "desc": "Shape ko rotate karke 3D banata hai",
+        "quiz": [
+            ("Revolve kya banata hai?", "Cylinder"),
+            ("Best example?", "Bottle"),
+        ]
+    },
+    "Cut": {
+        "desc": "Material remove karta hai",
+        "quiz": [
+            ("Cut kya karta hai?", "Material remove"),
+        ]
+    }
+}
 
-tools = ["Extrude", "Revolve", "Cut", "Fillet", "Shell"]
+# =========================
+# 3D FUNCTIONS
+# =========================
+def box():
+    x = [0,1,1,0,0,1,1,0]
+    y = [0,0,1,1,0,0,1,1]
+    z = [0,0,0,0,1,1,1,1]
+    fig = go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
+    fig.update_layout(scene=dict(aspectmode='data'))
+    return fig
+
+def cylinder():
+    t = np.linspace(0,2*np.pi,30)
+    z = np.linspace(0,1,2)
+    t,z = np.meshgrid(t,z)
+    x = np.cos(t)
+    y = np.sin(t)
+    fig = go.Figure(data=[go.Surface(x=x,y=y,z=z)])
+    return fig
 
 # =========================
-# SAFE ANIMATION FUNCTION
+# ANIMATION ENGINE
 # =========================
-def show_animation(title, steps):
-    st.subheader(title)
+def animate(texts):
     box = st.empty()
-
-    for s in steps:
-        box.info(s)
+    for t in texts:
+        box.info(t)
         time.sleep(0.5)
-
     box.success("Model Ready ✅")
+
+# =========================
+# SIDEBAR
+# =========================
+mode = st.sidebar.radio("Mode", ["Learn Mode", "Practice Mode"])
+tool = st.sidebar.selectbox("Tool", list(TOOLS.keys()))
 
 # =========================
 # LEARN MODE
 # =========================
 if mode == "Learn Mode":
 
-    st.header("📘 Learn CAD Tools")
+    st.header(f"📘 {tool} Learning")
 
-    tool = st.selectbox("Select Tool", tools)
+    st.write(TOOLS[tool]["desc"])
 
-    st.markdown("---")
+    st.markdown("### Quiz")
 
-    if tool == "Extrude":
-        st.write("2D → 3D solid banata hai")
-        st.info("Example: box, brick")
-
-    elif tool == "Revolve":
-        st.write("Shape ko rotate karke 3D banata hai")
-        st.info("Example: bottle, cup")
-
-    elif tool == "Cut":
-        st.write("Material remove karta hai")
-        st.info("Example: hole")
-
-    elif tool == "Fillet":
-        st.write("Edges smooth karta hai")
-
-    elif tool == "Shell":
-        st.write("Solid ko hollow banata hai")
+    for q, a in TOOLS[tool]["quiz"]:
+        st.write(f"❓ {q}")
+        st.write(f"👉 {a}")
 
 # =========================
-# PRACTICE MODE (FIXED)
+# PRACTICE MODE
 # =========================
-elif mode == "Practice Mode":
+else:
 
     st.header("🛠️ Practice Lab")
 
-    tool = st.selectbox("Choose Tool", tools)
-
     col1, col2 = st.columns(2)
 
-    # =========================
-    # CANVAS (FIXED KEY ISSUE)
-    # =========================
     with col1:
-        st.subheader("✏️ Draw Sketch")
+        st.subheader("✏️ Sketch Area")
+        st.write("Canvas (future upgrade AI sketch detection)")
+        st.empty()
 
-        canvas = st_canvas(
-            fill_color="rgba(0, 255, 0, 0.2)",
-            stroke_width=3,
-            height=350,
-            width=350,
-            drawing_mode="rect",
-            key=f"canvas_{tool}"   # ✅ IMPORTANT FIX
-        )
-
-        if canvas.image_data is not None:
-            st.caption("Sketch captured ✔")
-
-    # =========================
-    # ACTION PANEL
-    # =========================
     with col2:
+        st.subheader("⚙️ Action")
 
-        st.subheader("⚙️ Tool Action")
+        if st.button("🚀 Build Model"):
 
-        if st.button("🚀 Apply Tool", key=f"btn_{tool}"):
-
-            # =========================
-            # EXTRUDE
-            # =========================
             if tool == "Extrude":
 
-                show_animation(
-                    "Extrusion Process",
-                    [
-                        "Sketch detect ho raha hai...",
-                        "Profile analyze ho raha hai...",
-                        "Height generate ho rahi hai...",
-                        "3D solid build ho raha hai..."
-                    ]
-                )
+                animate([
+                    "Sketch detected...",
+                    "Extruding shape...",
+                    "Height increasing...",
+                    "Solid forming..."
+                ])
 
-                st.success("📦 Final Product: BOX CREATED")
+                fig = box()
+                st.plotly_chart(fig, key="extrude_model")
 
-            # =========================
-            # REVOLVE
-            # =========================
             elif tool == "Revolve":
 
-                show_animation(
-                    "Revolve Process",
-                    [
-                        "Axis detect ho raha hai...",
-                        "Profile rotate ho raha hai...",
-                        "Surface generate ho rahi hai...",
-                        "3D shape ready..."
-                    ]
-                )
+                animate([
+                    "Axis detected...",
+                    "Rotating profile...",
+                    "Generating surface..."
+                ])
 
-                st.success("🍶 Final Product: CYLINDER CREATED")
+                fig = cylinder()
+                st.plotly_chart(fig, key="revolve_model")
 
-            # =========================
-            # CUT
-            # =========================
             elif tool == "Cut":
 
-                show_animation(
-                    "Cut Process",
-                    [
-                        "Solid load ho raha hai...",
-                        "Sketch apply ho raha hai...",
-                        "Material remove ho raha hai...",
-                        "Hole create ho gaya..."
-                    ]
-                )
+                animate([
+                    "Material loading...",
+                    "Cutting volume...",
+                    "Hole created..."
+                ])
 
-                st.success("🕳️ Final Product: CUT DONE")
+                st.success("Cut Applied")
 
-            # =========================
-            # FILLET
-            # =========================
-            elif tool == "Fillet":
-
-                show_animation(
-                    "Fillet Process",
-                    [
-                        "Edges detect ho rahi hain...",
-                        "Radius apply ho raha hai...",
-                        "Smooth transition ban raha hai..."
-                    ]
-                )
-
-                st.success("🔵 Final Product: SMOOTH MODEL")
-
-            # =========================
-            # SHELL
-            # =========================
-            elif tool == "Shell":
-
-                show_animation(
-                    "Shell Process",
-                    [
-                        "Solid analyze ho raha hai...",
-                        "Thickness set ho rahi hai...",
-                        "Inner material remove ho raha hai...",
-                        "Hollow object ready..."
-                    ]
-                )
-
-                st.success("🥤 Final Product: HOLLOW OBJECT")
-
-    st.info("👉 Ab ye app step-by-step CAD feel deta hai (no duplicate error)")
+    st.info("👉 Ye engine scalable hai (20 tools easily add ho sakte hain)")
