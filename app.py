@@ -1,220 +1,227 @@
-# =========================================================
-# SAFE & WORKING render_model()
-# REPLACE YOUR OLD render_model() WITH THIS
-# =========================================================
+import streamlit as st
+import numpy as np
+import plotly.graph_objects as go
+from datetime import datetime
+import time
 
+# optional canvas
+try:
+    from streamlit_drawable_canvas import st_canvas
+    CANVAS = True
+except:
+    CANVAS = False
+
+# =====================================================
+# PAGE SETUP
+# =====================================================
+st.set_page_config(page_title="SolidShala CAD", layout="wide")
+
+st.title("🛠️ SolidShala AI CAD Engine")
+st.write("Sketch → Detect → Modify → Build Model")
+
+# =====================================================
+# SESSION STATE
+# =====================================================
+if "model" not in st.session_state:
+    st.session_state.model = {
+        "shape": None,
+        "radius": 1.0,
+        "height": 1.0,
+        "cut_depth": 0.0,
+        "chamfer": 0.0,
+        "scale": 1.0,
+        "features": []
+    }
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+# =====================================================
+# SHAPES
+# =====================================================
+def create_circle():
+    st.session_state.model["shape"] = "circle"
+    st.session_state.model["radius"] = 1.0
+    st.session_state.model["height"] = 1.0
+
+def create_square():
+    st.session_state.model["shape"] = "square"
+    st.session_state.model["height"] = 1.0
+
+# =====================================================
+# SIMPLE AI DETECT (SAFE)
+# =====================================================
+def detect_shape():
+    # simple toggle demo (real AI nahi, stable version)
+    if np.random.random() > 0.5:
+        create_circle()
+        return "circle"
+    else:
+        create_square()
+        return "square"
+
+# =====================================================
+# TOOL ENGINE
+# =====================================================
+def apply_tool(tool):
+
+    m = st.session_state.model
+
+    if tool == "Extrude":
+        m["height"] += 0.5
+
+    elif tool == "Cut":
+        m["cut_depth"] += 0.2
+        m["height"] = max(0.3, m["height"] - 0.1)
+
+    elif tool == "Chamfer":
+        m["chamfer"] += 0.05
+
+    elif tool == "Scale":
+        m["scale"] += 0.1
+
+    m["features"].append(tool)
+
+    st.session_state.history.append({
+        "tool": tool,
+        "time": str(datetime.now())
+    })
+
+# =====================================================
+# SAFE RENDER MODEL (IMPORTANT)
+# =====================================================
 def render_model():
 
-    model = st.session_state.model
-
+    m = st.session_state.model
     fig = go.Figure()
 
-    # =====================================================
-    # CIRCLE MODEL
-    # =====================================================
-    if model["shape"] == "circle":
+    shape = m["shape"]
 
-        radius = max(
-            0.2,
-            model.get("radius", 1.0)
-            - model.get("cut_depth", 0.0) * 0.1
-        )
+    # =========================
+    # CYLINDER
+    # =========================
+    if shape == "circle":
 
-        scale = model.get("scale", 1.0)
+        r = max(0.2, m["radius"] - m["cut_depth"] * 0.1)
+        r *= m["scale"]
 
-        radius = radius * scale
+        h = m["height"]
 
-        height = model.get("height", 1.0)
+        t = np.linspace(0, 2*np.pi, 40)
+        z = np.linspace(0, h, 15)
 
-        theta = np.linspace(0, 2*np.pi, 60)
+        t, z = np.meshgrid(t, z)
 
-        z = np.linspace(0, height, 30)
+        x = r * np.cos(t)
+        y = r * np.sin(t)
 
-        theta, z = np.meshgrid(theta, z)
+        fig.add_trace(go.Surface(x=x, y=y, z=z, opacity=0.9))
 
-        x = radius * np.cos(theta)
+    # =========================
+    # BOX
+    # =========================
+    elif shape == "square":
 
-        y = radius * np.sin(theta)
+        s = 1 * m["scale"]
+        h = m["height"]
+        c = m["chamfer"]
 
-        # MAIN CYLINDER
-        fig.add_trace(go.Surface(
-            x=x,
-            y=y,
-            z=z,
-            opacity=0.9
+        x = [0, s, s, 0, 0, s, s, 0]
+        y = [0, 0, s, s, 0, 0, s, s]
+        z = [0, 0, 0, 0, h, h, h, h]
+
+        fig.add_trace(go.Mesh3d(
+            x=x, y=y, z=z,
+            opacity=0.7
         ))
 
-        # =================================================
-        # SHELL EFFECT
-        # =================================================
-        shell = model.get("shell", 0.0)
-
-        if shell > 0:
-
-            inner_radius = max(
-                0.1,
-                radius - shell * 0.2
-            )
-
-            x2 = inner_radius * np.cos(theta)
-
-            y2 = inner_radius * np.sin(theta)
-
-            fig.add_trace(go.Surface(
-                x=x2,
-                y=y2,
-                z=z,
+        # chamfer visual (safe fake effect)
+        if c > 0:
+            fig.add_trace(go.Mesh3d(
+                x=[c, s-c, s, 0],
+                y=[0, 0, s, s],
+                z=[h, h, h, h],
                 opacity=0.3
             ))
 
-        # =================================================
-        # PATTERN EFFECT
-        # =================================================
-        pattern = model.get("pattern", 1)
-
-        for i in range(1, pattern):
-
-            fig.add_trace(go.Surface(
-                x=x + (i * 2.5),
-                y=y,
-                z=z,
-                opacity=0.4
-            ))
-
-    # =====================================================
-    # SQUARE MODEL
-    # =====================================================
-    elif model["shape"] == "square":
-
-        scale = model.get("scale", 1.0)
-
-        chamfer = model.get("chamfer", 0.0)
-
-        height = model.get("height", 1.0)
-
-        size = 1.0 * scale
-
-        c = min(chamfer, 0.3)
-
-        # SAFE BOX POINTS
-        x = [
-            c, size-c, size, size,
-            size-c, c, 0, 0
-        ]
-
-        y = [
-            0,0,c,size-c,
-            size,size,size-c,c
-        ]
-
-        z_bottom = [0]*8
-
-        z_top = [height]*8
-
-        # BOTTOM
-        fig.add_trace(go.Scatter3d(
-            x=x,
-            y=y,
-            z=z_bottom,
-            mode='lines'
-        ))
-
-        # TOP
-        fig.add_trace(go.Scatter3d(
-            x=x,
-            y=y,
-            z=z_top,
-            mode='lines'
-        ))
-
-        # VERTICAL EDGES
-        for i in range(8):
-
-            fig.add_trace(go.Scatter3d(
-                x=[x[i], x[i]],
-                y=[y[i], y[i]],
-                z=[0, height],
-                mode='lines'
-            ))
-
-        # =================================================
-        # MIRROR EFFECT
-        # =================================================
-        mirror = model.get("mirror", False)
-
-        if mirror:
-
-            x2 = [-v for v in x]
-
-            fig.add_trace(go.Scatter3d(
-                x=x2,
-                y=y,
-                z=z_bottom,
-                mode='lines'
-            ))
-
-            fig.add_trace(go.Scatter3d(
-                x=x2,
-                y=y,
-                z=z_top,
-                mode='lines'
-            ))
-
-        # =================================================
-        # PATTERN EFFECT
-        # =================================================
-        pattern = model.get("pattern", 1)
-
-        if pattern > 1:
-
-            for p in range(1, pattern):
-
-                shift = p * 2
-
-                x_shift = [v + shift for v in x]
-
-                fig.add_trace(go.Scatter3d(
-                    x=x_shift,
-                    y=y,
-                    z=z_bottom,
-                    mode='lines'
-                ))
-
-                fig.add_trace(go.Scatter3d(
-                    x=x_shift,
-                    y=y,
-                    z=z_top,
-                    mode='lines'
-                ))
-
-    # =====================================================
-    # EMPTY SCREEN
-    # =====================================================
     else:
-
         fig.add_annotation(
             text="Draw Shape First",
             showarrow=False,
-            font=dict(size=26)
+            font=dict(size=20)
         )
 
-    # =====================================================
-    # FINAL SETTINGS
-    # =====================================================
     fig.update_layout(
-
-        height=600,
-
-        margin=dict(
-            l=0,
-            r=0,
-            t=20,
-            b=0
-        ),
-
-        scene=dict(
-            aspectmode='data'
-        )
+        height=550,
+        margin=dict(l=0, r=0, t=20, b=0),
+        scene=dict(aspectmode="data")
     )
 
     return fig
+
+# =====================================================
+# SIDEBAR
+# =====================================================
+st.sidebar.title("CAD Tools")
+
+tool = st.sidebar.selectbox(
+    "Select Tool",
+    ["Extrude", "Cut", "Chamfer", "Scale"]
+)
+
+# =====================================================
+# LAYOUT
+# =====================================================
+col1, col2 = st.columns(2)
+
+# =========================
+# LEFT: CANVAS
+# =========================
+with col1:
+
+    st.subheader("✏️ Sketch Area")
+
+    if CANVAS:
+
+        canvas = st_canvas(
+            stroke_width=3,
+            background_color="#111827",
+            height=300,
+            drawing_mode="freedraw",
+            key="canvas"
+        )
+
+    if st.button("🤖 Detect Shape"):
+
+        result = detect_shape()
+        st.success(f"Detected: {result}")
+
+    st.plotly_chart(render_model(), use_container_width=True)
+
+# =========================
+# RIGHT: CONTROLS
+# =========================
+with col2:
+
+    st.subheader("⚙️ Actions")
+
+    if st.button("Apply Tool"):
+
+        apply_tool(tool)
+        st.success(f"{tool} applied")
+
+        st.rerun()
+
+    st.subheader("📏 Model Info")
+
+    m = st.session_state.model
+
+    st.write("Shape:", m["shape"])
+    st.write("Height:", m["height"])
+    st.write("Cut:", m["cut_depth"])
+    st.write("Chamfer:", m["chamfer"])
+
+    st.subheader("🧠 History")
+
+    for h in reversed(st.session_state.history[-5:]):
+        st.write(h["tool"], h["time"])
