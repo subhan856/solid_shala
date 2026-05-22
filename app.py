@@ -10,17 +10,20 @@ except:
     CANVAS_AVAILABLE = False
 
 
-st.set_page_config(page_title="SolidShala V12 FULL", layout="wide")
+st.set_page_config(page_title="SolidShala V13", layout="wide")
 
-st.title("🛠️ SolidShala V12 - FULL CAD AI ENGINE")
-st.write("Sketch → Animate → Tool → Model → Learn → Exam")
+st.title("🛠️ SolidShala V13 - CAD GAME LEARNING ENGINE")
+st.write("🎮 Build Real Products Step-by-Step (Like a Game)")
 
 
 # =========================
-# SESSION STATE (SAFE)
+# SESSION STATE (GAME ENGINE)
 # =========================
-if "model" not in st.session_state:
-    st.session_state.model = "cube"
+if "step" not in st.session_state:
+    st.session_state.step = 0
+
+if "product" not in st.session_state:
+    st.session_state.product = "Bottle"
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -30,25 +33,23 @@ if "score" not in st.session_state:
 
 
 # =========================
-# 20 TOOLS (RESTORED FULL)
+# PRODUCTS (MISSIONS)
 # =========================
-TOOLS = [
-    "Extrude","Revolve","Cut","Fillet","Chamfer",
-    "Loft","Sweep","Shell","Pattern","Mirror",
-    "Scale","Move","Rotate","Union","Subtract",
-    "Intersect","Draft","Offset","Thicken","FilletEdge"
-]
+PRODUCTS = {
+    "Bottle": ["Sketch Circle", "Revolve", "Shell", "Fillet Finish"],
+    "Box": ["Sketch Square", "Extrude", "Cut Hole", "Chamfer Finish"],
+    "Stand": ["Sketch Base", "Extrude", "Cut Slot", "Fillet Finish"]
+}
 
 
 # =========================
-# BASE MODELS
+# 3D MODELS
 # =========================
 def cube():
     x = [0,1,1,0,0,1,1,0]
     y = [0,0,1,1,0,0,1,1]
     z = [0,0,0,0,1,1,1,1]
     return go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
-
 
 def cylinder():
     t = np.linspace(0,2*np.pi,50)
@@ -60,138 +61,141 @@ def cylinder():
 
 
 def render_model():
-    return cube() if st.session_state.model == "cube" else cylinder()
+    if st.session_state.product == "Bottle":
+        return cylinder()
+    return cube()
 
 
 # =========================
-# ANIMATION ENGINE (RESTORED)
+# ANIMATION ENGINE (IMPORTANT)
 # =========================
-def animate(tool):
+def animate(text):
+    box = st.empty()
 
     steps = [
-        "Sketch analyzing...",
-        f"{tool} detected...",
-        "Geometry processing...",
-        "Applying tool...",
-        "Rebuilding model...",
+        "Analyzing sketch...",
+        text,
+        "Applying transformation...",
+        "Updating model...",
         "Done ✅"
     ]
 
-    box = st.empty()
     for s in steps:
         box.info(s)
-        time.sleep(0.25)
-    box.success("Model Updated Successfully")
+        time.sleep(0.3)
+
+    box.success("Step Completed 🎯")
 
 
 # =========================
-# TOOL ENGINE (SAFE EXTENSION)
+# TOOL SIMULATION ENGINE
 # =========================
-def apply_tool(tool):
+def apply_step(step_name):
 
-    if tool == "Extrude":
-        st.session_state.model = "cube"
-        st.session_state.score += 2
-
-    elif tool == "Revolve":
-        st.session_state.model = "cylinder"
-        st.session_state.score += 2
-
-    elif tool == "Cut":
-        st.session_state.score += 3
-
-    elif tool == "Shell":
-        st.session_state.score += 3
-
-    elif tool == "Fillet":
+    if "Sketch" in step_name:
         st.session_state.score += 1
 
-    elif tool == "Chamfer":
+    elif "Extrude" in step_name:
+        st.session_state.score += 2
+
+    elif "Revolve" in step_name:
+        st.session_state.score += 2
+
+    elif "Cut" in step_name:
+        st.session_state.score += 3
+
+    elif "Shell" in step_name:
+        st.session_state.score += 3
+
+    elif "Fillet" in step_name:
         st.session_state.score += 1
+
+    st.session_state.history.append(step_name)
+
+
+# =========================
+# SIDEBAR (GAME CONTROL)
+# =========================
+st.sidebar.header("🎮 Game Panel")
+
+st.session_state.product = st.sidebar.selectbox("Select Product Mission", list(PRODUCTS.keys()))
+
+step_list = PRODUCTS[st.session_state.product]
+
+st.sidebar.write("📌 Steps:")
+for i, s in enumerate(step_list, 1):
+    st.sidebar.write(f"{i}. {s}")
+
+st.sidebar.metric("⭐ Score", st.session_state.score)
+
+
+# =========================
+# MAIN GAME UI
+# =========================
+col1, col2 = st.columns([1,1])
+
+
+# =========================
+# CANVAS (MAIN INPUT)
+# =========================
+with col1:
+
+    st.subheader("✏️ Sketch Area")
+
+    if CANVAS_AVAILABLE:
+        canvas = st_canvas(
+            fill_color="rgba(0, 0, 255, 0.2)",
+            stroke_width=3,
+            stroke_color="#000",
+            background_color="#fff",
+            height=350,
+            drawing_mode="freedraw",
+            key="canvas"
+        )
+    else:
+        st.warning("Install streamlit-drawable-canvas")
+
+
+# =========================
+# MODEL VIEW + GAME ACTION
+# =========================
+with col2:
+
+    st.subheader("🏗️ Live Product Builder")
+
+    st.plotly_chart(render_model(), use_container_width=True)
+
+    if st.session_state.step < len(step_list):
+
+        current_step = step_list[st.session_state.step]
+
+        st.info(f"Next Step: {current_step}")
+
+        if st.button("▶ Apply Step"):
+
+            animate(current_step)
+
+            apply_step(current_step)
+
+            st.session_state.step += 1
+
+            st.rerun()
 
     else:
-        st.session_state.score += 1
+        st.success("🎉 Product Completed!")
 
-    st.session_state.history.append(tool)
-
-    return f"{tool} applied successfully"
+        st.balloons()
 
 
 # =========================
-# SIDEBAR
+# HISTORY SYSTEM (REPLAY FEEL)
 # =========================
-tool = st.sidebar.selectbox("Tool", TOOLS)
-mode = st.sidebar.radio("Mode", ["Build Mode", "Learn Mode", "Replay Mode"])
+st.divider()
 
+st.subheader("📜 Build History")
 
-# fake sketch input (IMPORTANT RESTORE)
-sketch_type = st.sidebar.selectbox("Sketch Type", ["circle","square","line"])
-
-
-# =========================
-# LEARN MODE (RESTORED)
-# =========================
-if mode == "Learn Mode":
-
-    st.header(f"📘 Learn: {tool}")
-
-    st.info(f"{tool} CAD tool used in modeling workflow")
-
-    st.success("👉 Har tool model ko modify karta hai")
-
-
-# =========================
-# BUILD MODE (FULL RESTORE)
-# =========================
-elif mode == "Build Mode":
-
-    st.header("🛠️ Full CAD Builder V12 (Stable)")
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        st.subheader("✏️ Canvas")
-
-        if CANVAS_AVAILABLE:
-            st_canvas(
-                fill_color="rgba(0, 0, 255, 0.2)",
-                stroke_width=3,
-                stroke_color="#000",
-                background_color="#fff",
-                height=350,
-                drawing_mode="freedraw",
-                key="canvas"
-            )
-        else:
-            st.warning("Canvas install: pip install streamlit-drawable-canvas")
-
-    with col2:
-
-        st.subheader("📦 Live Model")
-
-        st.plotly_chart(render_model(), use_container_width=True)
-
-        if st.button("🚀 Apply Tool"):
-
-            animate(tool)
-
-            msg = apply_tool(tool)
-
-            st.success(msg)
-
-            st.write("Score:", st.session_state.score)
-
-
-# =========================
-# REPLAY MODE (V11 FEATURE RESTORED)
-# =========================
+if st.session_state.history:
+    for i, h in enumerate(st.session_state.history, 1):
+        st.write(f"Step {i}: {h}")
 else:
-
-    st.header("🔄 Model History Replay")
-
-    if len(st.session_state.history) == 0:
-        st.info("No actions yet")
-    else:
-        for i, h in enumerate(st.session_state.history, 1):
-            st.write(f"{i}. {h}")
+    st.info("No steps yet")
