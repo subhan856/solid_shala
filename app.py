@@ -1,6 +1,6 @@
 # =========================================================
-# NEW ADVANCED render_model()
-# REPLACE OLD render_model() WITH THIS
+# SAFE & WORKING render_model()
+# REPLACE YOUR OLD render_model() WITH THIS
 # =========================================================
 
 def render_model():
@@ -10,23 +10,25 @@ def render_model():
     fig = go.Figure()
 
     # =====================================================
-    # CIRCLE / CYLINDER MODEL
+    # CIRCLE MODEL
     # =====================================================
     if model["shape"] == "circle":
 
         radius = max(
             0.2,
-            model["radius"]
-            - model["cut_depth"] * 0.1
+            model.get("radius", 1.0)
+            - model.get("cut_depth", 0.0) * 0.1
         )
 
-        radius *= model["scale"]
+        scale = model.get("scale", 1.0)
 
-        height = model["height"]
+        radius = radius * scale
 
-        theta = np.linspace(0, 2*np.pi, 80)
+        height = model.get("height", 1.0)
 
-        z = np.linspace(0, height, 40)
+        theta = np.linspace(0, 2*np.pi, 60)
+
+        z = np.linspace(0, height, 30)
 
         theta, z = np.meshgrid(theta, z)
 
@@ -34,9 +36,7 @@ def render_model():
 
         y = radius * np.sin(theta)
 
-        # =============================================
         # MAIN CYLINDER
-        # =============================================
         fig.add_trace(go.Surface(
             x=x,
             y=y,
@@ -44,14 +44,16 @@ def render_model():
             opacity=0.9
         ))
 
-        # =============================================
+        # =================================================
         # SHELL EFFECT
-        # =============================================
-        if model["shell"] > 0:
+        # =================================================
+        shell = model.get("shell", 0.0)
+
+        if shell > 0:
 
             inner_radius = max(
                 0.1,
-                radius - model["shell"] * 0.2
+                radius - shell * 0.2
             )
 
             x2 = inner_radius * np.cos(theta)
@@ -65,118 +67,141 @@ def render_model():
                 opacity=0.3
             ))
 
-        # =============================================
+        # =================================================
         # PATTERN EFFECT
-        # =============================================
-        for i in range(1, model["pattern"]):
+        # =================================================
+        pattern = model.get("pattern", 1)
+
+        for i in range(1, pattern):
 
             fig.add_trace(go.Surface(
                 x=x + (i * 2.5),
                 y=y,
                 z=z,
-                opacity=0.5
+                opacity=0.4
             ))
 
     # =====================================================
-    # BOX MODEL
+    # SQUARE MODEL
     # =====================================================
     elif model["shape"] == "square":
 
-        scale = model["scale"]
+        scale = model.get("scale", 1.0)
 
-        chamfer = model["chamfer"]
+        chamfer = model.get("chamfer", 0.0)
 
-        height = model["height"]
+        height = model.get("height", 1.0)
 
         size = 1.0 * scale
 
-        c = chamfer
+        c = min(chamfer, 0.3)
 
-        # =============================================
-        # BOX VERTICES
-        # =============================================
-        vertices = np.array([
+        # SAFE BOX POINTS
+        x = [
+            c, size-c, size, size,
+            size-c, c, 0, 0
+        ]
 
-            [c,0,0],
-            [size-c,0,0],
-            [size,c,0],
-            [size,size-c,0],
-            [size-c,size,0],
-            [c,size,0],
-            [0,size-c,0],
-            [0,c,0],
+        y = [
+            0,0,c,size-c,
+            size,size,size-c,c
+        ]
 
-            [c,0,height],
-            [size-c,0,height],
-            [size,c,height],
-            [size,size-c,height],
-            [size-c,size,height],
-            [c,size,height],
-            [0,size-c,height],
-            [0,c,height],
+        z_bottom = [0]*8
 
-        ])
+        z_top = [height]*8
 
-        x = vertices[:,0]
-        y = vertices[:,1]
-        z = vertices[:,2]
-
-        # =============================================
-        # MAIN BOX
-        # =============================================
-        fig.add_trace(go.Mesh3d(
+        # BOTTOM
+        fig.add_trace(go.Scatter3d(
             x=x,
             y=y,
-            z=z,
-            alphahull=0,
-            opacity=0.75
+            z=z_bottom,
+            mode='lines'
         ))
 
-        # =============================================
+        # TOP
+        fig.add_trace(go.Scatter3d(
+            x=x,
+            y=y,
+            z=z_top,
+            mode='lines'
+        ))
+
+        # VERTICAL EDGES
+        for i in range(8):
+
+            fig.add_trace(go.Scatter3d(
+                x=[x[i], x[i]],
+                y=[y[i], y[i]],
+                z=[0, height],
+                mode='lines'
+            ))
+
+        # =================================================
         # MIRROR EFFECT
-        # =============================================
-        if model["mirror"]:
+        # =================================================
+        mirror = model.get("mirror", False)
 
-            fig.add_trace(go.Mesh3d(
-                x=-x,
+        if mirror:
+
+            x2 = [-v for v in x]
+
+            fig.add_trace(go.Scatter3d(
+                x=x2,
                 y=y,
-                z=z,
-                alphahull=0,
-                opacity=0.4
+                z=z_bottom,
+                mode='lines'
             ))
 
-        # =============================================
+            fig.add_trace(go.Scatter3d(
+                x=x2,
+                y=y,
+                z=z_top,
+                mode='lines'
+            ))
+
+        # =================================================
         # PATTERN EFFECT
-        # =============================================
-        for i in range(1, model["pattern"]):
+        # =================================================
+        pattern = model.get("pattern", 1)
 
-            fig.add_trace(go.Mesh3d(
-                x=x + (i * 2),
-                y=y,
-                z=z,
-                alphahull=0,
-                opacity=0.4
-            ))
+        if pattern > 1:
+
+            for p in range(1, pattern):
+
+                shift = p * 2
+
+                x_shift = [v + shift for v in x]
+
+                fig.add_trace(go.Scatter3d(
+                    x=x_shift,
+                    y=y,
+                    z=z_bottom,
+                    mode='lines'
+                ))
+
+                fig.add_trace(go.Scatter3d(
+                    x=x_shift,
+                    y=y,
+                    z=z_top,
+                    mode='lines'
+                ))
 
     # =====================================================
-    # EMPTY MODEL
+    # EMPTY SCREEN
     # =====================================================
     else:
 
         fig.add_annotation(
             text="Draw Shape First",
             showarrow=False,
-            font=dict(size=28)
+            font=dict(size=26)
         )
 
     # =====================================================
-    # FINAL LAYOUT
+    # FINAL SETTINGS
     # =====================================================
     fig.update_layout(
-
-        scene=dict(
-            aspectmode="data"
-        ),
 
         height=600,
 
@@ -185,6 +210,10 @@ def render_model():
             r=0,
             t=20,
             b=0
+        ),
+
+        scene=dict(
+            aspectmode='data'
         )
     )
 
