@@ -4,24 +4,23 @@ import plotly.graph_objects as go
 import time
 from datetime import datetime
 
-# =========================================================
-# PAGE CONFIG
-# =========================================================
-st.set_page_config(page_title="SolidShala Pro Max", layout="wide")
+# =========================
+# APP CONFIG
+# =========================
+st.set_page_config(page_title="SolidShala Final Pro", layout="wide")
 
-st.title("🛠️ SolidShala Pro Max - CAD Learning System")
-st.write("Sketch → Parametric Model → Tools → Live CAD Simulation")
+st.title("🛠️ SolidShala Final Pro - CAD Learning Simulator")
+st.write("Sketch → Model → Tools → Live CAD Simulation")
 
-# =========================================================
-# SESSION STATE (CORE ENGINE)
-# =========================================================
-if "model" not in st.session_state:
+# =========================
+# SAFE SESSION STATE INIT
+# =========================
+if "model" not in st.session_state or st.session_state.model is None:
     st.session_state.model = {
         "shape": None,
         "radius": 1.0,
         "height": 1.0,
         "width": 1.0,
-        "depth": 1.0,
         "cut": 0.0,
         "features": []
     }
@@ -29,35 +28,26 @@ if "model" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
-if "log" not in st.session_state:
-    st.session_state.log = []
-
-# =========================================================
-# TOOLS (20 CAD FUNCTIONS)
-# =========================================================
-TOOLS = [
-    "Extrude", "Revolve", "Cut", "Shell", "Fillet",
-    "Chamfer", "Scale", "Move", "Rotate", "Mirror",
-    "Pattern", "Loft", "Sweep", "Union", "Subtract",
-    "Intersect", "Offset", "Thicken", "Draft", "Reset"
-]
-
-# =========================================================
-# MODEL CREATION (PARAMETRIC ENGINE)
-# =========================================================
+# =========================
+# MODEL CREATION (SKETCH)
+# =========================
 def create_circle():
-    st.session_state.model["shape"] = "circle"
-    st.session_state.model["radius"] = 1
-    st.session_state.model["height"] = 1
+    m = st.session_state.model
+    m["shape"] = "circle"
+    m["radius"] = 1.0
+    m["height"] = 1.0
+    st.session_state.model = m
 
 def create_square():
-    st.session_state.model["shape"] = "square"
-    st.session_state.model["width"] = 1
-    st.session_state.model["height"] = 1
+    m = st.session_state.model
+    m["shape"] = "square"
+    m["width"] = 1.0
+    m["height"] = 1.0
+    st.session_state.model = m
 
-# =========================================================
-# RENDER ENGINE (LIVE CAD VIEW)
-# =========================================================
+# =========================
+# RENDER ENGINE (LIVE MODEL)
+# =========================
 def render_model():
 
     m = st.session_state.model
@@ -82,29 +72,42 @@ def render_model():
         fig = go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
 
     else:
-
         fig = go.Figure()
         fig.add_annotation(text="Create Sketch First", showarrow=False)
 
-    fig.update_layout(
-        title="Live CAD Model",
-        margin=dict(l=0, r=0, t=40, b=0)
-    )
-
+    fig.update_layout(margin=dict(l=0,r=0,t=40,b=0))
     return fig
 
-# =========================================================
-# TOOL ENGINE (REAL PARAMETRIC MODIFICATION)
-# =========================================================
+# =========================
+# ANIMATION ENGINE
+# =========================
+def animate(tool):
+
+    box = st.empty()
+
+    steps = [
+        "Reading sketch...",
+        f"Applying {tool}...",
+        "Updating geometry...",
+        "Rebuilding model...",
+        "Done ✅"
+    ]
+
+    for s in steps:
+        box.info(s)
+        time.sleep(0.2)
+
+    box.success(f"{tool} applied")
+
+# =========================
+# TOOL ENGINE (REAL PARAMETRIC LOGIC)
+# =========================
 def apply_tool(tool):
 
     m = st.session_state.model
 
     if tool == "Extrude":
         m["height"] += 0.5
-
-    elif tool == "Revolve":
-        m["shape"] = "circle"
 
     elif tool == "Cut":
         m["height"] -= 0.3
@@ -117,94 +120,71 @@ def apply_tool(tool):
         m["radius"] *= 1.05
 
     elif tool == "Chamfer":
-        m["width"] *= 0.95 if m["shape"] == "square" else m["radius"]
+        m["width"] *= 0.95
 
     elif tool == "Scale":
         m["height"] *= 1.1
+        m["radius"] *= 1.1
 
-    elif tool == "Reset":
-        create_circle()
+    elif tool == "Revolve":
+        m["shape"] = "circle"
 
-    m["features"].append(tool)
+    else:
+        m["features"].append(tool)
 
-    st.session_state.log.append({
+    st.session_state.history.append({
         "tool": tool,
         "time": str(datetime.now())
     })
 
     st.session_state.model = m
 
-# =========================================================
-# ANIMATION ENGINE
-# =========================================================
-def animate(tool):
+# =========================
+# TOOLS (20 CAD TOOLS)
+# =========================
+TOOLS = [
+    "Extrude","Revolve","Cut","Shell","Fillet",
+    "Chamfer","Scale","Move","Rotate","Mirror",
+    "Pattern","Loft","Sweep","Union","Subtract",
+    "Intersect","Offset","Thicken","Draft","Reset"
+]
 
-    box = st.empty()
-
-    steps = [
-        "Reading sketch...",
-        f"Applying tool: {tool}",
-        "Updating geometry...",
-        "Rebuilding model...",
-        "Finalizing CAD output..."
-    ]
-
-    for s in steps:
-        box.info(s)
-        time.sleep(0.2)
-
-    box.success("Model Updated Successfully")
-
-# =========================================================
-# UI - SIDEBAR
-# =========================================================
-st.sidebar.header("CAD Controls")
-
+# =========================
+# SIDEBAR
+# =========================
 tool = st.sidebar.selectbox("Select Tool", TOOLS)
 
-mode = st.sidebar.radio("Mode", ["Modeling", "History", "Learn"])
-
-shape = st.sidebar.selectbox("Sketch Shape", ["circle", "square"])
+shape = st.sidebar.selectbox("Sketch Shape", ["circle","square"])
 
 if st.sidebar.button("Create Sketch"):
-
     if shape == "circle":
         create_circle()
     else:
         create_square()
-
     st.success("Sketch Created")
 
-# =========================================================
+# =========================
 # MAIN UI
-# =========================================================
-col1, col2 = st.columns([1.2, 1])
+# =========================
+col1, col2 = st.columns([1.2,1])
 
-# =========================================================
-# LEFT: MODEL VIEW
-# =========================================================
 with col1:
 
-    st.subheader("✏️ CAD Sketch / Canvas")
-
-    st.info("Sketch system (parametric input)")
+    st.subheader("✏️ Sketch Input")
+    st.info("Parametric CAD Sketch System")
 
     st.subheader("🏗️ Live Model")
-
     st.plotly_chart(render_model(), use_container_width=True)
 
     if st.button("Apply Tool"):
 
         if st.session_state.model["shape"] is None:
-            st.warning("Create sketch first")
+            st.warning("Pehle sketch create karo")
         else:
             animate(tool)
             apply_tool(tool)
             st.rerun()
 
-# =========================================================
-# RIGHT: INFO PANEL
-# =========================================================
 with col2:
 
     st.subheader("📏 AI Dimensions Panel")
@@ -214,31 +194,18 @@ with col2:
     st.write("Shape:", m["shape"])
     st.write("Radius:", m["radius"])
     st.write("Height:", m["height"])
-    st.write("Cut Depth:", m["cut"])
+    st.write("Cut:", m["cut"])
 
-    st.subheader("⚙️ Feature Stack")
+    st.subheader("⚙️ Features")
+    for f in m["features"]:
+        st.write("•", f)
 
-    for i, f in enumerate(m["features"], 1):
-        st.write(i, f)
-
-# =========================================================
-# HISTORY PAGE
-# =========================================================
+# =========================
+# HISTORY
+# =========================
 st.divider()
 
-if mode == "History":
+st.subheader("📜 CAD History")
 
-    st.subheader("📜 CAD History Timeline")
-
-    for h in st.session_state.log:
-        st.write(h["tool"], "|", h["time"])
-
-elif mode == "Learn":
-
-    st.subheader("📘 Tool Learning")
-
-    st.write("Each tool modifies the same parametric model like SolidWorks.")
-
-else:
-
-    st.info("Modeling Mode Active")
+for h in st.session_state.history:
+    st.write(h["tool"], "|", h["time"])
