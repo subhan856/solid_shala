@@ -1,117 +1,36 @@
 import streamlit as st
-import time
-import plotly.graph_objects as go
 import numpy as np
+import plotly.graph_objects as go
+import time
 
-try:
-    from streamlit_drawable_canvas import st_canvas
-    CANVAS_AVAILABLE = True
-except:
-    CANVAS_AVAILABLE = False
+st.set_page_config(page_title="SolidShala V12", layout="wide")
 
-st.set_page_config(page_title="SolidShala V9", layout="wide")
-
-st.title("🛠️ SolidShala V9 - CAD Learning Classroom + Engine")
-st.write("Sketch → Learn → Animate → Build 3D Model")
+st.title("🛠️ SolidShala V12 - AI CAD Tutor Engine")
+st.write("Sketch → AI Detect → Learn → Build → Test → Score")
 
 
 # =========================
-# 20 TOOLS + EDUCATION DATA
+# SESSION STATE (SAFE UPGRADE)
 # =========================
-TOOLS = {
-    "Extrude": {
-        "desc": "Extrude 2D shape ko 3D solid banata hai.",
-        "example": "Box, brick",
-        "quiz": [
-            ("Extrude kya karta hai?", "2D to 3D"),
-            ("Example?", "Box"),
-            ("Extrude kis kaam aata hai?", "Solid banane"),
-            ("Input kya hota hai?", "2D sketch"),
-            ("Output kya hota hai?", "3D model"),
-            ("Industry use?", "CAD modeling"),
-            ("Shape type?", "Solid"),
-            ("Direction kya hoti hai?", "Linear"),
-            ("Tool type?", "Modeling"),
-            ("Used in?", "Engineering")
-        ]
-    },
+if "model" not in st.session_state:
+    st.session_state.model = "cube"
 
-    "Revolve": {
-        "desc": "Profile ko rotate karke 3D shape banata hai.",
-        "example": "Bottle, glass",
-        "quiz": [
-            ("Revolve kya karta hai?", "Rotation"),
-            ("Example?", "Bottle"),
-            ("Axis kya hota hai?", "Center line"),
-            ("Shape output?", "Cylindrical"),
-            ("Input?", "2D profile"),
-            ("Process?", "Rotation"),
-            ("Use?", "Mechanical parts"),
-            ("Industry?", "CAD"),
-            ("Tool type?", "3D modeling"),
-            ("Result?", "Solid")
-        ]
-    },
+if "score" not in st.session_state:
+    st.session_state.score = 0
 
-    "Cut": {
-        "desc": "Material remove karta hai.",
-        "example": "Hole, cavity",
-        "quiz": [
-            ("Cut kya karta hai?", "Remove material"),
-            ("Example?", "Hole"),
-            ("Use?", "Modify shape"),
-            ("Process?", "Subtraction"),
-            ("Input?", "Solid"),
-            ("Output?", "Modified solid"),
-            ("Tool type?", "Editing"),
-            ("Industry?", "Manufacturing"),
-            ("Operation?", "Boolean"),
-            ("Result?", "Hollow or shape change"),
-        ]
-    },
-
-    "Fillet": {
-        "desc": "Edges ko smooth round karta hai.",
-        "example": "Rounded corner",
-        "quiz": [
-            ("Fillet kya karta hai?", "Round edges"),
-            ("Example?", "Corner smoothing"),
-            ("Use?", "Safety + design"),
-            ("Shape?", "Rounded"),
-            ("Tool type?", "Modification"),
-            ("Industry?", "Mechanical"),
-            ("Benefit?", "Less stress"),
-            ("Edge type?", "Soft"),
-            ("Input?", "Sharp edge"),
-            ("Output?", "Smooth edge"),
-        ]
-    }
-}
-
-# Fill remaining tools quickly (same pattern)
-ALL_TOOLS = list(TOOLS.keys()) + [
-    "Chamfer","Loft","Sweep","Shell","Pattern","Mirror",
-    "Scale","Move","Rotate","Union","Subtract",
-    "Intersect","Draft","Offset","Thicken","FilletEdge"
-]
-
-for t in ALL_TOOLS:
-    if t not in TOOLS:
-        TOOLS[t] = {
-            "desc": f"{t} CAD operation used in modeling.",
-            "example": "Engineering part",
-            "quiz": [(f"{t} kya hai?", "CAD operation")] * 10
-        }
+if "exam_score" not in st.session_state:
+    st.session_state.exam_score = 0
 
 
 # =========================
-# 3D MODELS
+# BASE MODEL ENGINE (SAFE)
 # =========================
-def box():
+def cube():
     x = [0,1,1,0,0,1,1,0]
     y = [0,0,1,1,0,0,1,1]
     z = [0,0,0,0,1,1,1,1]
     return go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
+
 
 def cylinder():
     t = np.linspace(0,2*np.pi,50)
@@ -122,102 +41,159 @@ def cylinder():
     return go.Figure(data=[go.Surface(x=x,y=y,z=z)])
 
 
+def render():
+    return cube() if st.session_state.model == "cube" else cylinder()
+
+
 # =========================
-# ANIMATION
+# V12 AI SKETCH DETECTION (SIMULATED)
+# =========================
+def detect_shape(drawing_type):
+
+    if drawing_type == "circle":
+        return "Revolve"
+    elif drawing_type == "square":
+        return "Extrude"
+    elif drawing_type == "line":
+        return "Cut"
+    else:
+        return "Extrude"
+
+
+# =========================
+# AI TUTOR SYSTEM (V12 CORE)
+# =========================
+def ai_tutor(tool):
+
+    tutor = {
+        "Extrude": "AI: Ye base tool hai. 2D se 3D solid banata hai. Industry mein har model yahan se start hota hai.",
+        "Revolve": "AI: Cylindrical parts ke liye best tool. Bottle, wheel isi se banta hai.",
+        "Cut": "AI: Material remove karta hai. Hole aur cavity banane ke liye use hota hai.",
+        "Shell": "AI: Solid ko hollow banata hai. Weight reduce karne ke liye important.",
+        "Fillet": "AI: Sharp edges ko smooth karta hai taake design safe ho."
+    }
+
+    return tutor.get(tool, "AI: Ye CAD tool shape modify karta hai.")
+
+
+# =========================
+# TOOL ENGINE (V10 + V11 SAFE)
+# =========================
+def apply_tool(tool):
+
+    if tool == "Extrude":
+        st.session_state.model = "cube"
+        st.session_state.score += 2
+
+    elif tool == "Revolve":
+        st.session_state.model = "cylinder"
+        st.session_state.score += 2
+
+    elif tool == "Cut":
+        st.session_state.score += 3
+
+    elif tool == "Shell":
+        st.session_state.score += 3
+
+    elif tool == "Fillet":
+        st.session_state.score += 1
+
+    return f"{tool} applied successfully"
+
+
+# =========================
+# ANIMATION ENGINE
 # =========================
 def animate(tool):
+
     steps = [
-        "Sketch reading...",
-        f"{tool} analyzing...",
+        "AI analyzing sketch...",
+        f"{tool} detected...",
         "Geometry processing...",
-        "Model generating...",
-        "Final output ready..."
+        "Model updating...",
+        "Done"
     ]
 
     box = st.empty()
     for s in steps:
         box.info(s)
-        time.sleep(0.3)
-    box.success("Done ✅")
+        time.sleep(0.2)
+    box.success("Model Ready ✅")
+
+
+# =========================
+# EXAM MODE (NEW V12 FEATURE)
+# =========================
+def exam():
+
+    st.subheader("🧪 AI Exam Mode")
+
+    question = "Which tool converts 2D sketch into 3D solid?"
+    st.write("Q:", question)
+
+    ans = st.radio("Choose answer", ["Cut", "Extrude", "Shell", "Fillet"])
+
+    if st.button("Submit Answer"):
+
+        if ans == "Extrude":
+            st.session_state.exam_score += 1
+            st.success("Correct ✅")
+        else:
+            st.error("Wrong ❌ Correct answer: Extrude")
+
+        st.write("Score:", st.session_state.exam_score)
 
 
 # =========================
 # SIDEBAR
 # =========================
-mode = st.sidebar.radio("Mode", ["Learn Mode", "Practice Mode"])
-tool = st.sidebar.selectbox("Tool", ALL_TOOLS)
+TOOLS = ["Extrude","Revolve","Cut","Shell","Fillet"]
+
+tool = st.sidebar.selectbox("Tool", TOOLS)
+mode = st.sidebar.radio("Mode", ["Build Mode", "Learn Mode", "Exam Mode"])
+
+# fake sketch input
+sketch = st.sidebar.selectbox("Sketch Type", ["circle","square","line"])
 
 
 # =========================
-# LEARN MODE (NEW CLASSROOM)
+# LEARN MODE (AI TUTOR)
 # =========================
 if mode == "Learn Mode":
 
-    st.header(f"📘 Learning Classroom: {tool}")
+    st.header(f"📘 AI Tutor: {tool}")
 
-    data = TOOLS[tool]
-
-    st.subheader("🧠 Concept")
-    st.write(data["desc"])
-
-    st.subheader("📌 Example")
-    st.info(data["example"])
-
-    st.subheader("📚 10 Questions (Practice)")
-
-    for i, (q, a) in enumerate(data["quiz"], 1):
-        st.write(f"Q{i}: {q}")
-        st.write(f"👉 Answer: {a}")
+    st.info(ai_tutor(tool))
 
 
 # =========================
-# PRACTICE MODE
+# BUILD MODE
 # =========================
-else:
+elif mode == "Build Mode":
 
-    st.header("🛠️ Practice Lab")
+    st.header("🛠️ Smart CAD Builder V12")
 
     col1, col2 = st.columns(2)
 
     with col1:
-
-        st.subheader("✏️ Sketch Canvas")
-
-        if CANVAS_AVAILABLE:
-            st_canvas(
-                fill_color="rgba(0, 0, 255, 0.2)",
-                stroke_width=3,
-                stroke_color="#000",
-                background_color="#fff",
-                height=400,
-                drawing_mode="freedraw",
-                key="canvas"
-            )
-        else:
-            st.warning("Install streamlit-drawable-canvas")
+        st.plotly_chart(render(), use_container_width=True)
 
     with col2:
 
-        st.subheader("⚙️ Build Engine")
-
-        if st.button("🚀 Run Tool"):
+        if st.button("Apply Tool"):
 
             animate(tool)
 
-            if tool == "Extrude":
-                st.plotly_chart(box())
-            elif tool == "Revolve":
-                st.plotly_chart(cylinder())
-            else:
-                st.success(f"{tool} executed successfully")
+            msg = apply_tool(tool)
 
-    st.divider()
+            st.success(msg)
 
-    st.subheader("📜 History")
-    if "history" not in st.session_state:
-        st.session_state.history = []
+            st.write("Score:", st.session_state.score)
 
-    if st.button("💾 Save Tool"):
-        st.session_state.history.append(tool)
 
-    st.write(st.session_state.history)
+# =========================
+# EXAM MODE
+# =========================
+else:
+
+    exam()
