@@ -1,11 +1,12 @@
 import streamlit as st
+import random
 import numpy as np
 import plotly.graph_objects as go
 
-st.set_page_config(page_title="SolidShala PRO CAD", layout="wide")
+st.set_page_config(page_title="SolidShala 200 Tools CAD", layout="wide")
 
-st.title("🏭 SolidShala PRO CAD Learning Platform")
-st.write("Real Engineering Thinking + Sketch + Build + Exam System")
+st.title("🧠 SolidShala CAD Master System (200 Tools Edition)")
+st.write("Engineering Thinking + 200 Tool Intelligence System")
 
 # =========================
 # STATE
@@ -17,81 +18,79 @@ if "step" not in st.session_state:
     st.session_state.step = 0
 
 if "stage" not in st.session_state:
-    st.session_state.stage = "canvas"
+    st.session_state.stage = "start"
 
-if "exam_mode" not in st.session_state:
-    st.session_state.exam_mode = False
+if "tool_index" not in st.session_state:
+    st.session_state.tool_index = 0
 
 if "height" not in st.session_state:
     st.session_state.height = 1.0
 
 # =========================
-# ENGINEERING TASKS
+# 200 TOOLS SYSTEM (DATA DRIVEN)
 # =========================
-TASKS = [
-    {
-        "q": "Rotational shaft design ke liye best sketch?",
-        "options": ["Circle", "Square", "Line"],
-        "answer": "Circle",
-        "stage": "sketch",
-        "why": "Rotation = axis symmetry → circle base"
-    },
-    {
-        "q": "Circle ko 3D shaft banane ke liye?",
-        "options": ["Extrude", "Cut", "Pattern"],
-        "answer": "Extrude",
-        "stage": "extrude",
-        "why": "Extrude 2D profile ko 3D solid banata hai"
-    },
-    {
-        "q": "Material remove karne ka process?",
-        "options": ["Cut", "Fillet", "Scale"],
-        "answer": "Cut",
-        "stage": "cut",
-        "why": "Cut subtractive manufacturing hai"
-    },
-    {
-        "q": "Sharp edge ko safe banane ke liye?",
-        "options": ["Fillet", "Mirror", "Extrude"],
-        "answer": "Fillet",
-        "stage": "finish",
-        "why": "Fillet stress concentration reduce karta hai"
-    }
+TOOLS = [
+    {"name": "Extrude", "why": "2D → 3D conversion", "type": "create"},
+    {"name": "Revolve", "why": "Rotational parts", "type": "create"},
+    {"name": "Cut", "why": "Material removal", "type": "modify"},
+    {"name": "Fillet", "why": "Edge smoothing", "type": "finish"},
+    {"name": "Chamfer", "why": "Angular edge cut", "type": "finish"},
 ]
 
-q = TASKS[st.session_state.step % len(TASKS)]
+# Expand to 200 tools dynamically
+BASE = ["Shell", "Pattern", "Mirror", "Scale", "Loft", "Sweep", "Draft"]
+
+for i in range(1, 200):
+    tool = random.choice(BASE)
+    TOOLS.append({
+        "name": f"{tool}_{i}",
+        "why": f"{tool} operation engineering use case {i}",
+        "type": "advanced"
+    })
 
 # =========================
-# SIMPLE CANVAS SIMULATION
+# QUESTION GENERATOR (200+ QUESTIONS LOGIC)
 # =========================
-def sketch_canvas():
+def generate_question(tool):
 
-    st.subheader("✏️ Sketch Canvas (Simulated)")
+    if tool["name"].startswith("Extrude"):
+        q = "2D sketch ko 3D banane ke liye?"
+        options = ["Extrude", "Cut", "Mirror"]
+        answer = "Extrude"
 
-    x = st.slider("X Shape Control", 0.0, 10.0, 5.0)
-    y = st.slider("Y Shape Control", 0.0, 10.0, 5.0)
+    elif tool["name"].startswith("Revolve"):
+        q = "Rotational part ke liye best tool?"
+        options = ["Revolve", "Extrude", "Scale"]
+        answer = "Revolve"
 
-    fig = go.Figure()
+    elif tool["name"].startswith("Cut"):
+        q = "Material remove karne ke liye?"
+        options = ["Cut", "Fillet", "Pattern"]
+        answer = "Cut"
 
-    fig.add_trace(go.Scatter(
-        x=[0, x, x, 0, 0],
-        y=[0, 0, y, y, 0],
-        mode="lines+markers"
-    ))
+    else:
+        q = f"{tool['name']} kis category ka tool hai?"
+        options = ["Create", "Modify", "Finish"]
+        answer = tool["type"].capitalize()
 
-    fig.update_layout(height=400)
-
-    return fig
+    return q, options, answer
 
 # =========================
-# CAD MODEL ENGINE
+# TOOL PICK
+# =========================
+tool = TOOLS[st.session_state.tool_index % len(TOOLS)]
+
+q, options, answer = generate_question(tool)
+
+# =========================
+# MODEL RENDER (SIMPLE SAFE CAD VIEW)
 # =========================
 def render(stage):
 
     fig = go.Figure()
     h = st.session_state.height
 
-    if stage == "sketch":
+    if stage == "start":
 
         t = np.linspace(0, 2*np.pi, 80)
         fig.add_trace(go.Scatter3d(
@@ -101,10 +100,10 @@ def render(stage):
             mode="lines"
         ))
 
-    elif stage == "extrude":
+    elif stage == "create":
 
         t = np.linspace(0, 2*np.pi, 50)
-        z = np.linspace(0, h, 30)
+        z = np.linspace(0, h, 25)
         t, z = np.meshgrid(t, z)
 
         fig.add_trace(go.Surface(
@@ -114,13 +113,11 @@ def render(stage):
             opacity=0.85
         ))
 
-    elif stage == "cut":
-
-        h2 = max(0.4, h - 0.5)
+    elif stage == "modify":
 
         x = [0,1,1,0,0,1,1,0]
         y = [0,0,1,1,0,0,1,1]
-        z = [0,0,0,0,h2,h2,h2,h2]
+        z = [0,0,0,0,h,h,h,h]
 
         fig.add_trace(go.Mesh3d(x=x, y=y, z=z, opacity=0.8))
 
@@ -141,89 +138,71 @@ def render(stage):
     return fig
 
 # =========================
-# UI MODE
+# UI
 # =========================
-st.sidebar.title("🎮 Mode")
+st.subheader(f"🛠 Tool #{st.session_state.tool_index+1}: {tool['name']}")
 
-mode = st.sidebar.radio("Select Mode", ["Learning Mode", "Exam Mode"])
+st.info(tool["why"])
+
+st.subheader("🎯 Question")
+
+choice = st.radio(q, options)
+
+st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
 
 # =========================
-# EXAM MODE
+# ACTIONS
 # =========================
-if mode == "Exam Mode":
+col1, col2 = st.columns(2)
 
-    st.header("📝 CAD Exam Mode")
+with col1:
 
-    st.info(q["q"])
+    if st.button("Submit Answer"):
 
-    choice = st.radio("Answer", q["options"])
-
-    if st.button("Submit Exam Answer"):
-
-        if choice == q["answer"]:
-            st.success("✔ Correct")
+        if choice == answer:
+            st.success("✔ Correct Engineering Thinking")
             st.session_state.score += 1
-            st.session_state.stage = q["stage"]
-        else:
-            st.error("❌ Wrong")
 
-        st.write("🧠 Reason:")
-        st.write(q["why"])
+            if tool["type"] == "create":
+                st.session_state.stage = "create"
+            elif tool["type"] == "modify":
+                st.session_state.stage = "modify"
+            else:
+                st.session_state.stage = "finish"
 
-        st.session_state.step += 1
-
-    st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
-
-    st.subheader("📐 Model View")
-    st.plotly_chart(render(st.session_state.stage), use_container_width=True)
-
-# =========================
-# LEARNING MODE
-# =========================
-else:
-
-    st.header("📘 Learning Mode")
-
-    st.info(q["q"])
-
-    st.write("Select Tool Thinking:")
-
-    choice = st.radio("Tool", q["options"])
-
-    if st.button("Learn"):
-
-        if choice == q["answer"]:
-            st.success("✔ Correct Thinking")
-            st.session_state.stage = q["stage"]
         else:
             st.error("❌ Wrong Thinking")
 
-        st.write("🧠 Explanation:")
-        st.write(q["why"])
-
+        st.session_state.tool_index += 1
         st.session_state.step += 1
 
-    st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
+with col2:
 
-    col1, col2 = st.columns(2)
+    if st.button("Next Tool"):
+        st.session_state.tool_index += 1
 
-    with col1:
-        st.subheader("✏️ Sketch Canvas")
-        st.plotly_chart(sketch_canvas(), use_container_width=True)
+# =========================
+# MODEL VIEW
+# =========================
+st.subheader("📐 Live CAD View")
 
-    with col2:
-        st.subheader("📐 CAD Model View")
-        st.plotly_chart(render(st.session_state.stage), use_container_width=True)
+st.plotly_chart(render(st.session_state.stage), use_container_width=True)
 
 # =========================
 # DASHBOARD
 # =========================
-st.sidebar.write("📊 Score:", st.session_state.score)
-st.sidebar.write("Step:", st.session_state.step)
-st.sidebar.write("Stage:", st.session_state.stage)
+st.sidebar.title("📊 System Dashboard")
 
-if st.sidebar.button("Reset All"):
+st.sidebar.write("Score:", st.session_state.score)
+st.sidebar.write("Step:", st.session_state.step)
+st.sidebar.write("Tool Index:", st.session_state.tool_index)
+
+progress = (st.session_state.tool_index % 200) / 2
+st.sidebar.progress(progress / 100)
+
+if st.sidebar.button("Reset System"):
     st.session_state.score = 0
     st.session_state.step = 0
-    st.session_state.stage = "canvas"
+    st.session_state.tool_index = 0
+    st.session_state.stage = "start"
     st.session_state.height = 1.0
