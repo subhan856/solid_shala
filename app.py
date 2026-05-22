@@ -1,89 +1,79 @@
 import streamlit as st
-import random
 import numpy as np
 import plotly.graph_objects as go
+import random
 
-st.set_page_config(page_title="SolidShala 200 Tools CAD", layout="wide")
+st.set_page_config(page_title="SolidShala LMS Pro", layout="wide")
 
-st.title("🧠 SolidShala CAD Master System (200 Tools Edition)")
-st.write("Engineering Thinking + 200 Tool Intelligence System")
+st.title("🏭 SolidShala LMS + CAD Thinking Platform (Final System)")
+st.write("Learn Engineering → Practice CAD → Pass Exams → Build Thinking")
 
 # =========================
-# STATE
+# SESSION STATE
 # =========================
 if "score" not in st.session_state:
     st.session_state.score = 0
 
-if "step" not in st.session_state:
-    st.session_state.step = 0
+if "lesson" not in st.session_state:
+    st.session_state.lesson = 0
+
+if "tool_index" not in st.session_state:
+    st.session_state.tool_index = 0
 
 if "stage" not in st.session_state:
     st.session_state.stage = "start"
 
-if "tool_index" not in st.session_state:
-    st.session_state.tool_index = 0
+if "mode" not in st.session_state:
+    st.session_state.mode = "Learn"
 
 if "height" not in st.session_state:
     st.session_state.height = 1.0
 
 # =========================
-# 200 TOOLS SYSTEM (DATA DRIVEN)
+# TOOL DATABASE (200 SYSTEM)
 # =========================
-TOOLS = [
-    {"name": "Extrude", "why": "2D → 3D conversion", "type": "create"},
-    {"name": "Revolve", "why": "Rotational parts", "type": "create"},
-    {"name": "Cut", "why": "Material removal", "type": "modify"},
-    {"name": "Fillet", "why": "Edge smoothing", "type": "finish"},
-    {"name": "Chamfer", "why": "Angular edge cut", "type": "finish"},
+BASE_TOOLS = [
+    ("Extrude", "create", "2D → 3D conversion"),
+    ("Revolve", "create", "Rotational geometry"),
+    ("Cut", "modify", "Material removal"),
+    ("Fillet", "finish", "Edge smoothing"),
+    ("Chamfer", "finish", "Angular edge cut"),
+    ("Shell", "modify", "Hollow structure"),
+    ("Pattern", "copy", "Repeat feature"),
+    ("Mirror", "copy", "Symmetry creation")
 ]
 
-# Expand to 200 tools dynamically
-BASE = ["Shell", "Pattern", "Mirror", "Scale", "Loft", "Sweep", "Draft"]
-
-for i in range(1, 200):
-    tool = random.choice(BASE)
+TOOLS = []
+for i in range(200):
+    t = random.choice(BASE_TOOLS)
     TOOLS.append({
-        "name": f"{tool}_{i}",
-        "why": f"{tool} operation engineering use case {i}",
-        "type": "advanced"
+        "name": f"{t[0]}_{i}",
+        "type": t[1],
+        "why": t[2]
     })
 
-# =========================
-# QUESTION GENERATOR (200+ QUESTIONS LOGIC)
-# =========================
-def generate_question(tool):
-
-    if tool["name"].startswith("Extrude"):
-        q = "2D sketch ko 3D banane ke liye?"
-        options = ["Extrude", "Cut", "Mirror"]
-        answer = "Extrude"
-
-    elif tool["name"].startswith("Revolve"):
-        q = "Rotational part ke liye best tool?"
-        options = ["Revolve", "Extrude", "Scale"]
-        answer = "Revolve"
-
-    elif tool["name"].startswith("Cut"):
-        q = "Material remove karne ke liye?"
-        options = ["Cut", "Fillet", "Pattern"]
-        answer = "Cut"
-
-    else:
-        q = f"{tool['name']} kis category ka tool hai?"
-        options = ["Create", "Modify", "Finish"]
-        answer = tool["type"].capitalize()
-
-    return q, options, answer
-
-# =========================
-# TOOL PICK
-# =========================
 tool = TOOLS[st.session_state.tool_index % len(TOOLS)]
 
-q, options, answer = generate_question(tool)
+# =========================
+# QUESTION ENGINE
+# =========================
+def make_question(tool):
+
+    if "Extrude" in tool["name"]:
+        return "2D sketch ko 3D banane ke liye best tool?", ["Extrude", "Cut", "Mirror"], "Extrude"
+
+    if "Revolve" in tool["name"]:
+        return "Rotational part ke liye best tool?", ["Revolve", "Extrude", "Scale"], "Revolve"
+
+    if "Cut" in tool["name"]:
+        return "Material remove karne ke liye?", ["Cut", "Fillet", "Pattern"], "Cut"
+
+    return f"{tool['name']} kis category ka tool hai?", ["Create", "Modify", "Finish"], tool["type"].capitalize()
+
+q, options, answer = make_question(tool)
 
 # =========================
-# MODEL RENDER (SIMPLE SAFE CAD VIEW)
+# CAD VISUAL ENGINE
 # =========================
 def render(stage):
 
@@ -103,7 +93,7 @@ def render(stage):
     elif stage == "create":
 
         t = np.linspace(0, 2*np.pi, 50)
-        z = np.linspace(0, h, 25)
+        z = np.linspace(0, h, 30)
         t, z = np.meshgrid(t, z)
 
         fig.add_trace(go.Surface(
@@ -138,14 +128,32 @@ def render(stage):
     return fig
 
 # =========================
-# UI
+# AI TUTOR (RULE BASED)
 # =========================
-st.subheader(f"🛠 Tool #{st.session_state.tool_index+1}: {tool['name']}")
+def ai_tutor(question):
 
+    if "Extrude" in question:
+        return "Extrude 2D shape ko 3D solid banata hai (height add hoti hai)."
+    if "Cut" in question:
+        return "Cut material remove karta hai (subtractive process)."
+    if "Revolve" in question:
+        return "Revolve rotational parts banata hai (axis symmetry)."
+
+    return "Think in geometry + function + manufacturing logic."
+
+# =========================
+# MODE SELECT
+# =========================
+st.sidebar.title("🎮 Mode")
+st.session_state.mode = st.sidebar.radio("Select", ["Learn Mode", "Practice Mode", "Exam Mode"])
+
+# =========================
+# MAIN UI
+# =========================
+st.subheader(f"🛠 Tool: {tool['name']}")
 st.info(tool["why"])
 
 st.subheader("🎯 Question")
-
 choice = st.radio(q, options)
 
 st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
@@ -153,14 +161,14 @@ st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
 # =========================
 # ACTIONS
 # =========================
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
 
     if st.button("Submit Answer"):
 
         if choice == answer:
-            st.success("✔ Correct Engineering Thinking")
+            st.success("✔ Correct Thinking")
             st.session_state.score += 1
 
             if tool["type"] == "create":
@@ -174,27 +182,29 @@ with col1:
             st.error("❌ Wrong Thinking")
 
         st.session_state.tool_index += 1
-        st.session_state.step += 1
 
 with col2:
+
+    if st.button("🤖 AI Help"):
+        st.write(ai_tutor(q))
+
+with col3:
 
     if st.button("Next Tool"):
         st.session_state.tool_index += 1
 
 # =========================
-# MODEL VIEW
+# PRACTICE / LEARN / EXAM SWITCH
 # =========================
-st.subheader("📐 Live CAD View")
-
+st.subheader("📐 CAD View")
 st.plotly_chart(render(st.session_state.stage), use_container_width=True)
 
 # =========================
 # DASHBOARD
 # =========================
-st.sidebar.title("📊 System Dashboard")
+st.sidebar.title("📊 Dashboard")
 
 st.sidebar.write("Score:", st.session_state.score)
-st.sidebar.write("Step:", st.session_state.step)
 st.sidebar.write("Tool Index:", st.session_state.tool_index)
 
 progress = (st.session_state.tool_index % 200) / 2
@@ -202,7 +212,6 @@ st.sidebar.progress(progress / 100)
 
 if st.sidebar.button("Reset System"):
     st.session_state.score = 0
-    st.session_state.step = 0
     st.session_state.tool_index = 0
     st.session_state.stage = "start"
     st.session_state.height = 1.0
