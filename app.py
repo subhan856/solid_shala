@@ -1,21 +1,33 @@
 import streamlit as st
-from streamlit_drawable_canvas import st_canvas
+import time
 
-st.set_page_config(page_title="SolidShala V4", layout="wide")
+st.set_page_config(page_title="SolidShala V5", layout="wide")
 
 # =========================
-# TITLE
+# HEADER
 # =========================
-st.title("🛠️ SolidShala V4")
-st.write("Learn CAD step-by-step like a game 🎮")
+st.title("🛠️ SolidShala V5 - CAD Learning System")
+st.write("Learn CAD like a visual game 🎮")
 
 # =========================
 # MODE SELECT
 # =========================
-mode = st.sidebar.radio(
-    "🎯 Select Mode",
-    ["Learn Mode", "Practice Mode"]
-)
+mode = st.sidebar.radio("Select Mode", ["Learn Mode", "Practice Mode"])
+
+tools = ["Extrude", "Revolve", "Cut", "Fillet", "Shell"]
+
+# =========================
+# ANIMATION FUNCTION (IMPORTANT)
+# =========================
+def animate_process(title, steps):
+    placeholder = st.empty()
+    st.subheader(title)
+
+    for step in steps:
+        placeholder.info(step)
+        time.sleep(0.6)
+
+    placeholder.success("Done ✅")
 
 # =========================
 # LEARN MODE
@@ -24,99 +36,127 @@ if mode == "Learn Mode":
 
     st.header("📘 Learn CAD Tools")
 
-    tool = st.selectbox(
-        "Tool select karo",
-        ["Extrude", "Revolve", "Cut", "Fillet", "Shell"]
-    )
+    tool = st.selectbox("Select Tool", tools)
 
-    st.write("### Concept Explanation")
+    st.markdown("---")
 
     if tool == "Extrude":
-        st.write("2D shape ko 3D solid me convert karta hai")
+        st.write("2D shape → 3D solid (basic building block)")
         st.info("Example: box, brick, mobile body")
-        st.image("https://i.imgur.com/8Q1zQyO.png")
 
     elif tool == "Revolve":
-        st.write("Shape ko axis ke around ghumata hai")
+        st.write("Shape rotates around axis → round object")
         st.info("Example: bottle, cup, cone")
-        st.image("https://i.imgur.com/0Z8QZ9h.png")
 
     elif tool == "Cut":
-        st.write("Material remove karta hai")
-        st.info("Example: hole in block")
+        st.write("Material removal from solid")
+        st.info("Example: hole drilling")
 
     elif tool == "Fillet":
-        st.write("Sharp edges ko round karta hai")
-        st.info("Example: smooth corners")
+        st.write("Sharp edges become smooth")
+        st.info("Example: rounded corners")
 
     elif tool == "Shell":
-        st.write("Solid ko hollow banata hai")
+        st.write("Solid becomes hollow")
         st.info("Example: cup, container")
 
-    st.success("👉 Ab Practice Mode try karo")
+    st.markdown("---")
+    st.success("👉 Switch to Practice Mode to apply tools")
 
 # =========================
 # PRACTICE MODE
 # =========================
 elif mode == "Practice Mode":
 
-    st.header("🛠️ Practice Area")
+    st.header("🛠️ Practice Lab")
+
+    st.write("Step 1: Imagine sketch (canvas optional future upgrade)")
+    st.write("Step 2: Apply tool")
+
+    tool = st.selectbox("Choose Tool to Apply", tools)
 
     col1, col2 = st.columns(2)
 
-    # =====================
-    # DRAW AREA
-    # =====================
     with col1:
+        st.subheader("📌 Task")
+        st.write(f"You selected: **{tool}**")
+        st.write("Now watch how model is built step-by-step")
 
-        st.subheader("✏️ Sketch Area")
-
-        canvas = st_canvas(
-            fill_color="rgba(0,255,0,0.3)",
-            stroke_width=3,
-            height=400,
-            width=400,
-            drawing_mode="rect",
-            key="canvas_practice"
-        )
-
-    # =====================
-    # TOOL AREA
-    # =====================
     with col2:
+        st.subheader("⚙️ Action")
 
-        st.subheader("⚙️ Apply Tool")
+        if st.button("🚀 Build Model"):
 
-        tool = st.selectbox(
-            "Tool select karo",
-            ["Extrude", "Revolve", "Cut", "Fillet", "Shell"]
-        )
-
-        if st.button("🚀 Apply Tool"):
-
-            st.write("Processing your sketch...")
-
+            # =====================
+            # EXTRUDE ANIMATION
+            # =====================
             if tool == "Extrude":
-                st.success("3D Box created 🔥 (Extrude Applied)")
+                animate_process(
+                    "Extrusion Process",
+                    [
+                        "Sketch detected...",
+                        "Base profile created...",
+                        "Material rising...",
+                        "Solid forming...",
+                        "3D box ready"
+                    ]
+                )
 
+            # =====================
+            # REVOLVE ANIMATION
+            # =====================
             elif tool == "Revolve":
-                st.success("Cylinder created 🔥 (Revolve Applied)")
+                animate_process(
+                    "Revolve Process",
+                    [
+                        "Axis detected...",
+                        "Profile selected...",
+                        "Rotation started...",
+                        "Shape forming...",
+                        "Cylinder ready"
+                    ]
+                )
 
+            # =====================
+            # CUT
+            # =====================
             elif tool == "Cut":
-                st.success("Hole created 🔥 (Cut Applied)")
+                animate_process(
+                    "Cut Process",
+                    [
+                        "Target solid loaded...",
+                        "Sketch for cut defined...",
+                        "Removing material...",
+                        "Hole created..."
+                    ]
+                )
 
+            # =====================
+            # FILLET
+            # =====================
             elif tool == "Fillet":
-                st.success("Edges rounded 🔥 (Fillet Applied)")
+                animate_process(
+                    "Fillet Process",
+                    [
+                        "Edges detected...",
+                        "Radius applied...",
+                        "Smoothing corners...",
+                        "Model softened..."
+                    ]
+                )
 
+            # =====================
+            # SHELL
+            # =====================
             elif tool == "Shell":
-                st.success("Object hollowed 🔥 (Shell Applied)")
+                animate_process(
+                    "Shell Process",
+                    [
+                        "Solid detected...",
+                        "Thickness setting applied...",
+                        "Removing inner material...",
+                        "Hollow model created..."
+                    ]
+                )
 
-            st.balloons()
-
-    st.info("👉 Pehle draw karo, phir tool apply karo")
-
-# =========================
-# FOOTER
-# =========================
-st.markdown("---")
-st.write("💡 SolidShala - Learn CAD in simple way")
+    st.info("💡 Ye animation learning feel create karta hai (SolidWorks style concept)")
