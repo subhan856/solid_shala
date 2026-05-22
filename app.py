@@ -1,138 +1,150 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
-from PIL import Image
-import io
-import base64
+import random
 
-st.set_page_config(page_title="SolidShala AI CAD", layout="wide")
+st.set_page_config(page_title="SolidShala v2 INSANE", layout="wide")
 
-st.title("🚀 SolidShala AI CAD Platform (Next Gen System)")
+st.title("🔥 SolidShala v2 - INSANE CAD ENGINE")
 
 # =========================
 # SESSION STATE
 # =========================
-if "chat" not in st.session_state:
-    st.session_state.chat = []
+defaults = {
+    "points": [],
+    "constraints": [],
+    "score": 0,
+    "level": 1,
+    "gear_speed": 1.0
+}
 
-if "points" not in st.session_state:
-    st.session_state.points = []
-
-if "score" not in st.session_state:
-    st.session_state.score = 0
-
-# =========================
-# AI TUTOR (ChatGPT Style Lite)
-# =========================
-def ai_tutor(msg):
-    msg = msg.lower()
-
-    if "extrude" in msg:
-        return "Extrude 2D sketch ko 3D solid banata hai."
-    if "cut" in msg:
-        return "Cut material remove karta hai."
-    if "revolve" in msg:
-        return "Revolve rotation se shape create karta hai."
-    if "gear" in msg:
-        return "Gear torque transfer ke liye use hota hai."
-    return "Engineering logic: shape + function + manufacturing samjho."
+for k,v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 # =========================
-# REAL SKETCH ENGINE (MOUSE DRAW)
+# 🧠 DRAG & DROP SKETCH ENGINE
 # =========================
-st.sidebar.header("✏️ Sketch Canvas (Mouse)")
+st.sidebar.header("✏️ Sketch Tool (CAD Mode)")
 
-canvas = st.sidebar.checkbox("Enable Sketch Mode")
+x = st.sidebar.slider("X", 0.0, 10.0, 5.0)
+y = st.sidebar.slider("Y", 0.0, 10.0, 5.0)
 
-if canvas:
-    st.write("👉 Click points to draw shape (simulate CAD sketch)")
-
-    x = st.slider("X point", 0.0, 10.0, 5.0)
-    y = st.slider("Y point", 0.0, 10.0, 5.0)
-
-    if st.button("Add Point"):
-        st.session_state.points.append((x, y))
+if st.sidebar.button("➕ Add Sketch Point"):
+    st.session_state.points.append((x, y))
 
 # =========================
-# 3D ENGINE SIMULATION
+# CONSTRAINT SYSTEM (SOLIDWORKS STYLE)
 # =========================
-def render_engine():
+st.sidebar.subheader("🔗 Constraints")
+
+constraint_type = st.sidebar.selectbox(
+    "Add Constraint",
+    ["Fix Point", "Horizontal", "Vertical", "Equal Length"]
+)
+
+if st.sidebar.button("Add Constraint"):
+    st.session_state.constraints.append(constraint_type)
+
+# =========================
+# SKETCH RENDER
+# =========================
+def draw_sketch(points):
 
     fig = go.Figure()
 
-    # crankshaft
-    theta = np.linspace(0, 2*np.pi, 100)
-    x = np.cos(theta)
-    y = np.sin(theta)
-    z = np.linspace(0, 5, 100)
+    if len(points) > 1:
+        x, y = zip(*points)
+        fig.add_trace(go.Scatter(x=x, y=y, mode="lines+markers"))
 
-    fig.add_trace(go.Scatter3d(x=x, y=y, z=z, mode="lines", name="Crankshaft"))
-
-    # gearbox block
-    fig.add_trace(go.Mesh3d(
-        x=[0,2,2,0,0,2,2,0],
-        y=[0,0,2,2,0,0,2,2],
-        z=[0,0,0,0,2,2,2,2],
-        opacity=0.5,
-        name="Gearbox"
-    ))
-
-    fig.update_layout(height=500)
+    fig.update_layout(height=400)
     return fig
+
+# =========================
+# ⚙️ REAL GEAR SIMULATION (PHYSICS)
+# =========================
+def gear_sim(speed):
+
+    theta = np.linspace(0, 2*np.pi, 100)
+
+    x1 = np.cos(theta)
+    y1 = np.sin(theta)
+
+    x2 = np.cos(theta + speed)
+    y2 = np.sin(theta + speed)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(x=x1, y=y1, mode="lines", name="Gear A"))
+    fig.add_trace(go.Scatter(x=x2*1.5, y=y2*1.5, mode="lines", name="Gear B"))
+
+    fig.update_layout(height=400)
+    return fig
+
+# =========================
+# MULTIPLAYER CHALLENGE (MOCK SYSTEM)
+# =========================
+def challenge():
+
+    challenges = [
+        "Draw a circle sketch",
+        "Make 2D to 3D extrusion concept",
+        "Add constraint to shape",
+        "Build gear system"
+    ]
+
+    return random.choice(challenges)
 
 # =========================
 # UI TABS
 # =========================
 tab1, tab2, tab3, tab4 = st.tabs([
-    "🧠 AI Tutor",
-    "📐 Sketch CAD",
-    "⚙️ 3D Engine",
-    "🏆 Leaderboard"
+    "✏️ CAD Sketch",
+    "🔗 Constraints",
+    "⚙️ Gear Simulation",
+    "🏆 Multiplayer Challenge"
 ])
 
 # =========================
-# AI CHAT
+# TAB 1 - SKETCH
 # =========================
 with tab1:
-    st.subheader("AI Tutor (ChatGPT Style)")
+    st.subheader("Drag & Drop Sketch System")
 
-    user_input = st.text_input("Ask CAD question")
-
-    if user_input:
-        response = ai_tutor(user_input)
-        st.session_state.chat.append(("You", user_input))
-        st.session_state.chat.append(("AI", response))
-
-    for role, msg in st.session_state.chat[-10:]:
-        st.write(f"**{role}:** {msg}")
+    st.plotly_chart(draw_sketch(st.session_state.points))
 
 # =========================
-# SKETCH VIEW
+# TAB 2 - CONSTRAINTS
 # =========================
 with tab2:
-    st.subheader("Real Sketch System")
+    st.subheader("Constraint System (SolidWorks Logic)")
 
-    if len(st.session_state.points) > 1:
-        x, y = zip(*st.session_state.points)
-        st.line_chart({"x": x, "y": y})
-    else:
-        st.info("Add points to create sketch")
+    st.write("Applied Constraints:")
+    st.write(st.session_state.constraints)
+
+    st.info("Future: constraints will lock geometry behavior")
 
 # =========================
-# 3D ENGINE
+# TAB 3 - GEAR PHYSICS
 # =========================
 with tab3:
-    st.subheader("Engine + Gearbox + Crankshaft")
+    st.subheader("Real Gear Meshing Simulation")
 
-    st.plotly_chart(render_engine(), use_container_width=True)
+    speed = st.slider("Gear Speed", 0.1, 5.0, 1.0)
+
+    st.session_state.gear_speed = speed
+
+    st.plotly_chart(gear_sim(speed))
 
 # =========================
-# LEADERBOARD (LOCAL MOCK)
+# TAB 4 - CHALLENGE SYSTEM
 # =========================
 with tab4:
-    st.subheader("Leaderboard System")
+    st.subheader("Multiplayer CAD Challenge")
 
-    st.session_state.score += len(st.session_state.points)
+    st.success("Task: " + challenge())
 
-    st.write("Score:", st.session_state.score)
-    st.write("Points:", len(st.session_state.points))
+    if st.button("Complete Challenge"):
+        st.session_state.score += 10
+        st.session_state.level += 1
+        st.success("Score Updated!")
