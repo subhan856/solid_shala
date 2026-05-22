@@ -3,27 +3,45 @@ import numpy as np
 import plotly.graph_objects as go
 import time
 
-st.set_page_config(page_title="SolidShala V12", layout="wide")
+try:
+    from streamlit_drawable_canvas import st_canvas
+    CANVAS_AVAILABLE = True
+except:
+    CANVAS_AVAILABLE = False
 
-st.title("🛠️ SolidShala V12 - AI CAD Tutor Engine")
-st.write("Sketch → AI Detect → Learn → Build → Test → Score")
+
+st.set_page_config(page_title="SolidShala V12 FULL", layout="wide")
+
+st.title("🛠️ SolidShala V12 - FULL CAD AI ENGINE")
+st.write("Sketch → Animate → Tool → Model → Learn → Exam")
 
 
 # =========================
-# SESSION STATE (SAFE UPGRADE)
+# SESSION STATE (SAFE)
 # =========================
 if "model" not in st.session_state:
     st.session_state.model = "cube"
 
+if "history" not in st.session_state:
+    st.session_state.history = []
+
 if "score" not in st.session_state:
     st.session_state.score = 0
 
-if "exam_score" not in st.session_state:
-    st.session_state.exam_score = 0
+
+# =========================
+# 20 TOOLS (RESTORED FULL)
+# =========================
+TOOLS = [
+    "Extrude","Revolve","Cut","Fillet","Chamfer",
+    "Loft","Sweep","Shell","Pattern","Mirror",
+    "Scale","Move","Rotate","Union","Subtract",
+    "Intersect","Draft","Offset","Thicken","FilletEdge"
+]
 
 
 # =========================
-# BASE MODEL ENGINE (SAFE)
+# BASE MODELS
 # =========================
 def cube():
     x = [0,1,1,0,0,1,1,0]
@@ -41,43 +59,33 @@ def cylinder():
     return go.Figure(data=[go.Surface(x=x,y=y,z=z)])
 
 
-def render():
+def render_model():
     return cube() if st.session_state.model == "cube" else cylinder()
 
 
 # =========================
-# V12 AI SKETCH DETECTION (SIMULATED)
+# ANIMATION ENGINE (RESTORED)
 # =========================
-def detect_shape(drawing_type):
+def animate(tool):
 
-    if drawing_type == "circle":
-        return "Revolve"
-    elif drawing_type == "square":
-        return "Extrude"
-    elif drawing_type == "line":
-        return "Cut"
-    else:
-        return "Extrude"
+    steps = [
+        "Sketch analyzing...",
+        f"{tool} detected...",
+        "Geometry processing...",
+        "Applying tool...",
+        "Rebuilding model...",
+        "Done ✅"
+    ]
 
-
-# =========================
-# AI TUTOR SYSTEM (V12 CORE)
-# =========================
-def ai_tutor(tool):
-
-    tutor = {
-        "Extrude": "AI: Ye base tool hai. 2D se 3D solid banata hai. Industry mein har model yahan se start hota hai.",
-        "Revolve": "AI: Cylindrical parts ke liye best tool. Bottle, wheel isi se banta hai.",
-        "Cut": "AI: Material remove karta hai. Hole aur cavity banane ke liye use hota hai.",
-        "Shell": "AI: Solid ko hollow banata hai. Weight reduce karne ke liye important.",
-        "Fillet": "AI: Sharp edges ko smooth karta hai taake design safe ho."
-    }
-
-    return tutor.get(tool, "AI: Ye CAD tool shape modify karta hai.")
+    box = st.empty()
+    for s in steps:
+        box.info(s)
+        time.sleep(0.25)
+    box.success("Model Updated Successfully")
 
 
 # =========================
-# TOOL ENGINE (V10 + V11 SAFE)
+# TOOL ENGINE (SAFE EXTENSION)
 # =========================
 def apply_tool(tool):
 
@@ -98,89 +106,73 @@ def apply_tool(tool):
     elif tool == "Fillet":
         st.session_state.score += 1
 
+    elif tool == "Chamfer":
+        st.session_state.score += 1
+
+    else:
+        st.session_state.score += 1
+
+    st.session_state.history.append(tool)
+
     return f"{tool} applied successfully"
-
-
-# =========================
-# ANIMATION ENGINE
-# =========================
-def animate(tool):
-
-    steps = [
-        "AI analyzing sketch...",
-        f"{tool} detected...",
-        "Geometry processing...",
-        "Model updating...",
-        "Done"
-    ]
-
-    box = st.empty()
-    for s in steps:
-        box.info(s)
-        time.sleep(0.2)
-    box.success("Model Ready ✅")
-
-
-# =========================
-# EXAM MODE (NEW V12 FEATURE)
-# =========================
-def exam():
-
-    st.subheader("🧪 AI Exam Mode")
-
-    question = "Which tool converts 2D sketch into 3D solid?"
-    st.write("Q:", question)
-
-    ans = st.radio("Choose answer", ["Cut", "Extrude", "Shell", "Fillet"])
-
-    if st.button("Submit Answer"):
-
-        if ans == "Extrude":
-            st.session_state.exam_score += 1
-            st.success("Correct ✅")
-        else:
-            st.error("Wrong ❌ Correct answer: Extrude")
-
-        st.write("Score:", st.session_state.exam_score)
 
 
 # =========================
 # SIDEBAR
 # =========================
-TOOLS = ["Extrude","Revolve","Cut","Shell","Fillet"]
-
 tool = st.sidebar.selectbox("Tool", TOOLS)
-mode = st.sidebar.radio("Mode", ["Build Mode", "Learn Mode", "Exam Mode"])
+mode = st.sidebar.radio("Mode", ["Build Mode", "Learn Mode", "Replay Mode"])
 
-# fake sketch input
-sketch = st.sidebar.selectbox("Sketch Type", ["circle","square","line"])
+
+# fake sketch input (IMPORTANT RESTORE)
+sketch_type = st.sidebar.selectbox("Sketch Type", ["circle","square","line"])
 
 
 # =========================
-# LEARN MODE (AI TUTOR)
+# LEARN MODE (RESTORED)
 # =========================
 if mode == "Learn Mode":
 
-    st.header(f"📘 AI Tutor: {tool}")
+    st.header(f"📘 Learn: {tool}")
 
-    st.info(ai_tutor(tool))
+    st.info(f"{tool} CAD tool used in modeling workflow")
+
+    st.success("👉 Har tool model ko modify karta hai")
 
 
 # =========================
-# BUILD MODE
+# BUILD MODE (FULL RESTORE)
 # =========================
 elif mode == "Build Mode":
 
-    st.header("🛠️ Smart CAD Builder V12")
+    st.header("🛠️ Full CAD Builder V12 (Stable)")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.plotly_chart(render(), use_container_width=True)
+
+        st.subheader("✏️ Canvas")
+
+        if CANVAS_AVAILABLE:
+            st_canvas(
+                fill_color="rgba(0, 0, 255, 0.2)",
+                stroke_width=3,
+                stroke_color="#000",
+                background_color="#fff",
+                height=350,
+                drawing_mode="freedraw",
+                key="canvas"
+            )
+        else:
+            st.warning("Canvas install: pip install streamlit-drawable-canvas")
 
     with col2:
 
-        if st.button("Apply Tool"):
+        st.subheader("📦 Live Model")
+
+        st.plotly_chart(render_model(), use_container_width=True)
+
+        if st.button("🚀 Apply Tool"):
 
             animate(tool)
 
@@ -192,8 +184,14 @@ elif mode == "Build Mode":
 
 
 # =========================
-# EXAM MODE
+# REPLAY MODE (V11 FEATURE RESTORED)
 # =========================
 else:
 
-    exam()
+    st.header("🔄 Model History Replay")
+
+    if len(st.session_state.history) == 0:
+        st.info("No actions yet")
+    else:
+        for i, h in enumerate(st.session_state.history, 1):
+            st.write(f"{i}. {h}")
