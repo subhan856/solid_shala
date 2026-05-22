@@ -14,7 +14,7 @@ st.subheader("Learn CAD Concepts in Simple Way")
 # ========================
 menu = st.sidebar.radio(
     "Choose",
-    ["Home", "Tool 1: Lamba Karo", "Progress"]
+    ["Home", "Tool 1: Lamba Karo", "Tool 2: Ghumao Karo", "Progress"]
 )
 
 # ========================
@@ -68,6 +68,25 @@ elif menu == "Tool 1: Lamba Karo":
 
             st.info("Socho ye ek real mechanical part hai 🔥")
 
+            st.balloons()
+            # ========================
+# TOOL 2
+# ========================
+elif menu == "Tool 2: Ghumao Karo":
+
+    st.header("🔄 Tool 2: Ghumao Karo (Revolve Concept)")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.write("2D shape → rotate → 3D object")
+
+    with col2:
+        shape = st.selectbox("Object choose karo", ["Bottle", "Cup", "Cone"])
+
+        if st.button("🔄 Ghumao Karo"):
+
+            st.success(f"{shape} ban gaya 🔥")
             st.balloons()
 
     # Quiz
