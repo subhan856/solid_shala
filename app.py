@@ -4,208 +4,540 @@ import plotly.graph_objects as go
 import time
 from datetime import datetime
 
-# =========================
-# APP CONFIG
-# =========================
-st.set_page_config(page_title="SolidShala Final Pro", layout="wide")
+# =========================================================
+# OPTIONAL DRAWING CANVAS
+# =========================================================
+try:
+    from streamlit_drawable_canvas import st_canvas
+    CANVAS_AVAILABLE = True
+except:
+    CANVAS_AVAILABLE = False
 
-st.title("🛠️ SolidShala Final Pro - CAD Learning Simulator")
-st.write("Sketch → Model → Tools → Live CAD Simulation")
+# =========================================================
+# PAGE CONFIG
+# =========================================================
+st.set_page_config(
+    page_title="SolidShala Ultimate",
+    layout="wide"
+)
 
-# =========================
-# SAFE SESSION STATE INIT
-# =========================
-if "model" not in st.session_state or st.session_state.model is None:
+# =========================================================
+# CUSTOM CSS (BETTER UI)
+# =========================================================
+st.markdown("""
+<style>
+.main {
+    background-color: #0e1117;
+    color: white;
+}
+
+.stButton>button {
+    width: 100%;
+    border-radius: 10px;
+    height: 45px;
+    font-size: 16px;
+}
+
+.tool-card {
+    background: #1b1f2a;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.dimension-box {
+    background: #111827;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.history-box {
+    background: #1f2937;
+    padding: 10px;
+    border-radius: 10px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# TITLE
+# =========================================================
+st.title("🛠️ SolidShala Ultimate CAD Engine")
+st.write("Sketch → Learn → Apply Tools → Build Product")
+
+# =========================================================
+# SAFE SESSION STATE
+# =========================================================
+if "model" not in st.session_state:
+
     st.session_state.model = {
         "shape": None,
         "radius": 1.0,
-        "height": 1.0,
         "width": 1.0,
-        "cut": 0.0,
-        "features": []
+        "height": 1.0,
+        "cut_depth": 0.0,
+        "features": [],
     }
 
 if "history" not in st.session_state:
     st.session_state.history = []
 
-# =========================
-# MODEL CREATION (SKETCH)
-# =========================
+if "score" not in st.session_state:
+    st.session_state.score = 0
+
+# =========================================================
+# LEARNING DATABASE
+# =========================================================
+LEARNING = {
+    "Extrude": {
+        "desc": "2D sketch ko 3D solid mein convert karta hai.",
+        "usage": "Boxes, machine parts, plates",
+        "questions": [
+            "Extrude kya karta hai?",
+            "Extrude ka use kaha hota hai?",
+            "2D ko 3D banane wala tool konsa hai?"
+        ]
+    },
+
+    "Cut": {
+        "desc": "Material remove karta hai.",
+        "usage": "Holes, slots, pockets",
+        "questions": [
+            "Cut ka purpose kya hai?",
+            "Material remove kaunsa tool karta hai?",
+            "Hole banane ke liye kya use hota hai?"
+        ]
+    },
+
+    "Shell": {
+        "desc": "Solid object ko hollow banata hai.",
+        "usage": "Bottle, container, plastic body",
+        "questions": [
+            "Shell kya karta hai?",
+            "Bottle hollow kaise hoti hai?",
+            "Thickness remove ka tool konsa hai?"
+        ]
+    },
+
+    "Fillet": {
+        "desc": "Sharp edges ko smooth karta hai.",
+        "usage": "Safe edges, design improvement",
+        "questions": [
+            "Fillet ka use kya hai?",
+            "Edges smooth kaise hoti hain?",
+            "Rounded corners kis tool se bante hain?"
+        ]
+    },
+
+    "Chamfer": {
+        "desc": "Edges ko angle pe cut karta hai.",
+        "usage": "Mechanical parts, bolts",
+        "questions": [
+            "Chamfer kya karta hai?",
+            "Bevel edge ka tool konsa hai?",
+            "45 degree edge cut kis se hota hai?"
+        ]
+    }
+}
+
+# =========================================================
+# ALL TOOLS
+# =========================================================
+TOOLS = [
+    "Extrude",
+    "Cut",
+    "Shell",
+    "Fillet",
+    "Chamfer",
+    "Scale",
+    "Move",
+    "Rotate",
+    "Mirror",
+    "Pattern",
+    "Loft",
+    "Sweep",
+    "Offset",
+    "Thicken",
+    "Draft",
+    "Union",
+    "Subtract",
+    "Intersect",
+    "Revolve",
+    "Reset"
+]
+
+# =========================================================
+# MODEL CREATION
+# =========================================================
 def create_circle():
-    m = st.session_state.model
-    m["shape"] = "circle"
-    m["radius"] = 1.0
-    m["height"] = 1.0
-    st.session_state.model = m
+
+    model = st.session_state.model
+
+    model["shape"] = "circle"
+    model["radius"] = 1.0
+    model["height"] = 1.0
+
+    st.session_state.model = model
+
 
 def create_square():
-    m = st.session_state.model
-    m["shape"] = "square"
-    m["width"] = 1.0
-    m["height"] = 1.0
-    st.session_state.model = m
 
-# =========================
-# RENDER ENGINE (LIVE MODEL)
-# =========================
+    model = st.session_state.model
+
+    model["shape"] = "square"
+    model["width"] = 1.0
+    model["height"] = 1.0
+
+    st.session_state.model = model
+
+
+# =========================================================
+# LIVE CAD RENDER
+# =========================================================
 def render_model():
 
-    m = st.session_state.model
+    model = st.session_state.model
 
-    if m["shape"] == "circle":
+    # =========================
+    # CIRCLE MODEL
+    # =========================
+    if model["shape"] == "circle":
 
-        t = np.linspace(0, 2*np.pi, 80)
-        z = np.linspace(0, m["height"], 2)
+        t = np.linspace(0, 2*np.pi, 100)
+        z = np.linspace(0, model["height"], 2)
+
         t, z = np.meshgrid(t, z)
 
-        x = m["radius"] * np.cos(t)
-        y = m["radius"] * np.sin(t)
+        x = model["radius"] * np.cos(t)
+        y = model["radius"] * np.sin(t)
 
-        fig = go.Figure(data=[go.Surface(x=x, y=y, z=z)])
+        fig = go.Figure(
+            data=[
+                go.Surface(
+                    x=x,
+                    y=y,
+                    z=z
+                )
+            ]
+        )
 
-    elif m["shape"] == "square":
+    # =========================
+    # SQUARE MODEL
+    # =========================
+    elif model["shape"] == "square":
 
         x = [0,1,1,0,0,1,1,0]
         y = [0,0,1,1,0,0,1,1]
-        z = [0,0,0,0,m["height"],m["height"],m["height"],m["height"]]
 
-        fig = go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
+        z = [
+            0,
+            0,
+            0,
+            0,
+            model["height"],
+            model["height"],
+            model["height"],
+            model["height"]
+        ]
+
+        fig = go.Figure(
+            data=[
+                go.Mesh3d(
+                    x=x,
+                    y=y,
+                    z=z,
+                    opacity=0.5
+                )
+            ]
+        )
 
     else:
-        fig = go.Figure()
-        fig.add_annotation(text="Create Sketch First", showarrow=False)
 
-    fig.update_layout(margin=dict(l=0,r=0,t=40,b=0))
+        fig = go.Figure()
+
+        fig.add_annotation(
+            text="Create Sketch First",
+            showarrow=False,
+            font=dict(size=24)
+        )
+
+    fig.update_layout(
+        height=500,
+        margin=dict(l=0,r=0,t=30,b=0)
+    )
+
     return fig
 
-# =========================
-# ANIMATION ENGINE
-# =========================
+# =========================================================
+# ANIMATION
+# =========================================================
 def animate(tool):
 
     box = st.empty()
 
     steps = [
-        "Reading sketch...",
+        "Reading Sketch...",
         f"Applying {tool}...",
-        "Updating geometry...",
-        "Rebuilding model...",
-        "Done ✅"
+        "Calculating Geometry...",
+        "Updating Dimensions...",
+        "Rendering Final Product..."
     ]
 
     for s in steps:
         box.info(s)
-        time.sleep(0.2)
+        time.sleep(0.3)
 
-    box.success(f"{tool} applied")
+    box.success("Tool Applied Successfully ✅")
 
-# =========================
-# TOOL ENGINE (REAL PARAMETRIC LOGIC)
-# =========================
+# =========================================================
+# TOOL ENGINE
+# =========================================================
 def apply_tool(tool):
 
-    m = st.session_state.model
+    model = st.session_state.model
 
     if tool == "Extrude":
-        m["height"] += 0.5
+        model["height"] += 0.5
 
     elif tool == "Cut":
-        m["height"] -= 0.3
-        m["cut"] += 0.3
+        model["cut_depth"] += 0.3
+        model["height"] -= 0.2
 
     elif tool == "Shell":
-        m["cut"] += 0.5
-
-    elif tool == "Fillet":
-        m["radius"] *= 1.05
-
-    elif tool == "Chamfer":
-        m["width"] *= 0.95
+        model["cut_depth"] += 0.5
 
     elif tool == "Scale":
-        m["height"] *= 1.1
-        m["radius"] *= 1.1
 
-    elif tool == "Revolve":
-        m["shape"] = "circle"
+        model["height"] *= 1.1
 
-    else:
-        m["features"].append(tool)
+        if model["shape"] == "circle":
+            model["radius"] *= 1.1
+
+    elif tool == "Fillet":
+
+        if model["shape"] == "circle":
+            model["radius"] *= 1.05
+
+    elif tool == "Chamfer":
+
+        if model["shape"] == "square":
+            model["width"] *= 0.95
+
+    elif tool == "Reset":
+
+        model["features"] = []
+        model["height"] = 1
+        model["radius"] = 1
+        model["cut_depth"] = 0
+
+    model["features"].append(tool)
+
+    st.session_state.model = model
 
     st.session_state.history.append({
         "tool": tool,
         "time": str(datetime.now())
     })
 
-    st.session_state.model = m
-
-# =========================
-# TOOLS (20 CAD TOOLS)
-# =========================
-TOOLS = [
-    "Extrude","Revolve","Cut","Shell","Fillet",
-    "Chamfer","Scale","Move","Rotate","Mirror",
-    "Pattern","Loft","Sweep","Union","Subtract",
-    "Intersect","Offset","Thicken","Draft","Reset"
-]
-
-# =========================
+# =========================================================
 # SIDEBAR
-# =========================
-tool = st.sidebar.selectbox("Select Tool", TOOLS)
+# =========================================================
+st.sidebar.title("🎛️ CAD Controls")
 
-shape = st.sidebar.selectbox("Sketch Shape", ["circle","square"])
+mode = st.sidebar.radio(
+    "Choose Mode",
+    [
+        "Modeling Mode",
+        "Learning Mode",
+        "History Mode"
+    ]
+)
 
-if st.sidebar.button("Create Sketch"):
+selected_tool = st.sidebar.selectbox(
+    "Select Tool",
+    TOOLS
+)
+
+shape = st.sidebar.selectbox(
+    "Select Sketch Shape",
+    [
+        "circle",
+        "square"
+    ]
+)
+
+# =========================================================
+# CREATE SKETCH
+# =========================================================
+if st.sidebar.button("🎯 Create Sketch"):
+
     if shape == "circle":
         create_circle()
+
     else:
         create_square()
-    st.success("Sketch Created")
 
-# =========================
-# MAIN UI
-# =========================
-col1, col2 = st.columns([1.2,1])
+    st.success("Sketch Created Successfully")
 
-with col1:
+# =========================================================
+# MODELING MODE
+# =========================================================
+if mode == "Modeling Mode":
 
-    st.subheader("✏️ Sketch Input")
-    st.info("Parametric CAD Sketch System")
+    col1, col2 = st.columns([1.2,1])
 
-    st.subheader("🏗️ Live Model")
-    st.plotly_chart(render_model(), use_container_width=True)
+    # =====================================================
+    # LEFT SIDE
+    # =====================================================
+    with col1:
 
-    if st.button("Apply Tool"):
+        st.subheader("✏️ Sketch Canvas")
 
-        if st.session_state.model["shape"] is None:
-            st.warning("Pehle sketch create karo")
+        if CANVAS_AVAILABLE:
+
+            st_canvas(
+                fill_color="rgba(0,0,255,0.1)",
+                stroke_width=3,
+                stroke_color="#FFFFFF",
+                background_color="#111827",
+                height=400,
+                drawing_mode="freedraw",
+                key="canvas"
+            )
+
         else:
-            animate(tool)
-            apply_tool(tool)
-            st.rerun()
+            st.warning(
+                "Install canvas:\n\npip install streamlit-drawable-canvas"
+            )
 
-with col2:
+        st.subheader("🏗️ Final Product")
 
-    st.subheader("📏 AI Dimensions Panel")
+        st.plotly_chart(
+            render_model(),
+            use_container_width=True
+        )
 
-    m = st.session_state.model
+    # =====================================================
+    # RIGHT SIDE
+    # =====================================================
+    with col2:
 
-    st.write("Shape:", m["shape"])
-    st.write("Radius:", m["radius"])
-    st.write("Height:", m["height"])
-    st.write("Cut:", m["cut"])
+        st.subheader("📏 AI Dimensions")
 
-    st.subheader("⚙️ Features")
-    for f in m["features"]:
-        st.write("•", f)
+        model = st.session_state.model
 
-# =========================
-# HISTORY
-# =========================
+        st.markdown(f"""
+<div class="dimension-box">
+
+<h4>Shape: {model["shape"]}</h4>
+
+<p>Radius: {round(model["radius"],2)}</p>
+
+<p>Height: {round(model["height"],2)}</p>
+
+<p>Cut Depth: {round(model["cut_depth"],2)}</p>
+
+</div>
+""", unsafe_allow_html=True)
+
+        st.subheader("⚙️ Apply Tool")
+
+        if st.button("🚀 Apply Selected Tool"):
+
+            if model["shape"] is None:
+
+                st.warning("Create sketch first")
+
+            else:
+
+                animate(selected_tool)
+
+                apply_tool(selected_tool)
+
+                st.session_state.score += 5
+
+                st.rerun()
+
+        st.subheader("🧠 Active Features")
+
+        for feature in model["features"][-10:]:
+
+            st.markdown(f"""
+<div class="tool-card">
+✅ {feature}
+</div>
+""", unsafe_allow_html=True)
+
+        st.metric("⭐ Learning Score", st.session_state.score)
+
+# =========================================================
+# LEARNING MODE
+# =========================================================
+elif mode == "Learning Mode":
+
+    st.header(f"📘 Learning: {selected_tool}")
+
+    if selected_tool in LEARNING:
+
+        data = LEARNING[selected_tool]
+
+        st.info(data["desc"])
+
+        st.success(f"💡 Usage: {data['usage']}")
+
+        st.subheader("❓ Practice Questions")
+
+        for i, q in enumerate(data["questions"],1):
+
+            st.write(f"{i}. {q}")
+
+    else:
+
+        st.info("This tool modifies geometry in CAD modeling.")
+
+# =========================================================
+# HISTORY MODE
+# =========================================================
+else:
+
+    st.header("📜 CAD Feature History")
+
+    if st.session_state.history:
+
+        for item in reversed(st.session_state.history):
+
+            st.markdown(f"""
+<div class="history-box">
+
+🔧 {item["tool"]}
+
+⏰ {item["time"]}
+
+</div>
+""", unsafe_allow_html=True)
+
+    else:
+
+        st.info("No CAD actions yet")
+
+# =========================================================
+# FOOTER
+# =========================================================
 st.divider()
 
-st.subheader("📜 CAD History")
+c1, c2, c3 = st.columns(3)
 
-for h in st.session_state.history:
-    st.write(h["tool"], "|", h["time"])
+c1.metric(
+    "Features",
+    len(st.session_state.model["features"])
+)
+
+c2.metric(
+    "History",
+    len(st.session_state.history)
+)
+
+c3.metric(
+    "Score",
+    st.session_state.score
+)
