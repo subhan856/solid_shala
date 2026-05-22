@@ -1,152 +1,145 @@
 import streamlit as st
-from streamlit_drawable_canvas import st_canvas
+import numpy as np
 import time
+from streamlit_drawable_canvas import st_canvas
+import plotly.graph_objects as go
+from PIL import Image
 
 st.set_page_config(page_title="SolidShala V6", layout="wide")
 
-# =========================
-# TITLE
-# =========================
-st.title("🛠️ SolidShala V6 - Real CAD Feel System")
-st.write("Sketch karo → Model banta dekho 🎮")
+st.title("🛠️ SolidShala V6 - Real CAD Feel Simulator")
+st.write("Sketch → Animate → 3D Model → Final Product 🔥")
 
 # =========================
-# MODE
+# SIDEBAR MODE
 # =========================
-mode = st.sidebar.radio("Select Mode", ["Learn Mode", "Practice Mode"])
+mode = st.sidebar.radio("Select Mode", ["Learn + Build Mode"])
 
-tools = ["Extrude", "Revolve", "Cut", "Fillet", "Shell"]
-
-# =========================
-# ANIMATION ENGINE (REAL FEEL)
-# =========================
-def run_animation(name, steps):
-    box = st.empty()
-    st.subheader(f"⚙️ {name}")
-
-    for i, s in enumerate(steps):
-        box.info(f"Step {i+1}: {s}")
-        time.sleep(0.7)
-
-    box.success("✔ Model Ready!")
+tool = st.sidebar.selectbox(
+    "Select Tool",
+    ["Extrude", "Revolve (Basic)", "Cut (Basic)"]
+)
 
 # =========================
-# LEARN MODE
+# IMAGE UPLOAD (NEW FEATURE)
 # =========================
-if mode == "Learn Mode":
+st.sidebar.subheader("📷 Reference Image (Optional)")
+img_file = st.sidebar.file_uploader("Upload product image")
 
-    st.header("📘 Learn CAD Tools")
-
-    tool = st.selectbox("Tool choose karo", tools)
-
-    st.markdown("---")
-
-    if tool == "Extrude":
-        st.write("👉 2D shape ko 3D solid me convert karta hai")
-        st.image("https://i.imgur.com/8Q1zQyO.png")
-
-    elif tool == "Revolve":
-        st.write("👉 Shape ko ghumakar round object banata hai")
-
-    elif tool == "Cut":
-        st.write("👉 Solid me se material remove karta hai")
-
-    elif tool == "Fillet":
-        st.write("👉 Sharp edges ko smooth banata hai")
-
-    elif tool == "Shell":
-        st.write("👉 Solid ko hollow banata hai")
-
-    st.success("Switch to Practice Mode 🚀")
+if img_file:
+    image = Image.open(img_file)
+    st.sidebar.image(image, caption="Reference")
 
 # =========================
-# PRACTICE MODE
+# CANVAS
 # =========================
-elif mode == "Practice Mode":
+st.subheader("✏️ Step 1: Sketch Area")
 
-    st.header("🛠️ Practice CAD Lab")
+canvas = st_canvas(
+    fill_color="rgba(0, 255, 0, 0.2)",
+    stroke_width=3,
+    height=400,
+    width=400,
+    drawing_mode="rect",
+    key="canvas"
+)
 
-    col1, col2 = st.columns(2)
+# =========================
+# EXTRUDE FUNCTION (REAL FEEL ANIMATION)
+# =========================
+def extrude_animation(height):
 
-    # =========================
-    # SKETCH AREA
-    # =========================
-    with col1:
+    placeholder = st.empty()
 
-        st.subheader("✏️ Draw Your Sketch")
+    for i in range(1, 11):
 
-        canvas_result = st_canvas(
-            fill_color="rgba(0, 255, 0, 0.2)",
-            stroke_width=3,
-            background_color="#ffffff",
-            height=400,
-            width=400,
-            drawing_mode="rect",
-            key="canvas"
+        h = height * (i / 10)
+
+        # simple box model growing
+        x = [0, 1, 1, 0, 0, 1, 1, 0]
+        y = [0, 0, 1, 1, 0, 0, 1, 1]
+        z = [0, 0, 0, 0, h, h, h, h]
+
+        fig = go.Figure(data=[
+            go.Mesh3d(
+                x=x, y=y, z=z,
+                opacity=0.6
+            )
+        ])
+
+        fig.update_layout(
+            scene=dict(aspectmode="data"),
+            margin=dict(l=0, r=0, t=0, b=0)
         )
 
-        if canvas_result.image_data is not None:
-            st.caption("📌 Sketch captured ✔")
+        placeholder.plotly_chart(fig, use_container_width=True)
+        time.sleep(0.2)
+
+    return fig
+
+# =========================
+# REVOLVE SIMULATION
+# =========================
+def revolve_animation():
+
+    placeholder = st.empty()
+
+    for i in range(1, 11):
+
+        theta = np.linspace(0, 2*np.pi*i/10, 30)
+        z = np.linspace(0, 2, 2)
+
+        theta_grid, z_grid = np.meshgrid(theta, z)
+
+        r = 1
+        x = r * np.cos(theta_grid)
+        y = r * np.sin(theta_grid)
+
+        fig = go.Figure(data=[
+            go.Surface(x=x, y=y, z=z_grid, opacity=0.7)
+        ])
+
+        fig.update_layout(scene=dict(aspectmode="data"))
+
+        placeholder.plotly_chart(fig, use_container_width=True)
+        time.sleep(0.2)
+
+    return fig
+
+# =========================
+# MAIN ACTION BUTTON
+# =========================
+st.subheader("⚙️ Step 2: Build Model")
+
+if st.button("🚀 Generate 3D Model"):
+
+    st.info("Processing sketch...")
+
+    # default height
+    height = 3
+
+    # TOOL LOGIC
+    if tool == "Extrude":
+        final_model = extrude_animation(height)
+
+    elif tool == "Revolve (Basic)":
+        final_model = revolve_animation()
+
+    elif tool == "Cut (Basic)":
+        st.warning("Cut simulation (simple demo)")
+        final_model = extrude_animation(2)
+        st.error("Hole created (simulation)")
 
     # =========================
-    # TOOL AREA
+    # FINAL OUTPUT
     # =========================
-    with col2:
+    st.success("✅ Final Product Ready")
 
-        st.subheader("⚙️ Apply Tool")
-
-        tool = st.selectbox("Select Tool", tools)
-
-        st.write("👉 Pehle sketch banao, phir tool apply karo")
-
-        if st.button("🚀 Build 3D Model"):
-
-            # EXTRUDE
-            if tool == "Extrude":
-                run_animation("Extrusion Process", [
-                    "Sketch detect ho raha hai",
-                    "Profile lock ho rahi hai",
-                    "Material rise ho raha hai",
-                    "3D shape form ho rahi hai"
-                ])
-
-            # REVOLVE
-            elif tool == "Revolve":
-                run_animation("Revolve Process", [
-                    "Axis detect ho raha hai",
-                    "Profile attach ho rahi hai",
-                    "Rotation start",
-                    "Round body create ho rahi hai"
-                ])
-
-            # CUT
-            elif tool == "Cut":
-                run_animation("Cut Process", [
-                    "Target solid load ho raha hai",
-                    "Cut profile detect",
-                    "Material remove ho raha hai",
-                    "Hole create ho gaya"
-                ])
-
-            # FILLET
-            elif tool == "Fillet":
-                run_animation("Fillet Process", [
-                    "Edges detect ho rahi hain",
-                    "Radius apply ho raha hai",
-                    "Corners smooth ho rahe hain"
-                ])
-
-            # SHELL
-            elif tool == "Shell":
-                run_animation("Shell Process", [
-                    "Solid analyze ho raha hai",
-                    "Thickness apply ho rahi hai",
-                    "Inner material remove",
-                    "Hollow model ready"
-                ])
+    st.subheader("🏁 Final Model View")
+    st.plotly_chart(final_model, use_container_width=True)
 
 # =========================
 # FOOTER
 # =========================
 st.markdown("---")
-st.write("💡 SolidShala V6 - From Sketch to Engineering Mind")
+st.write("💡 SolidShala V6 - Learning CAD Like a Game Engine")
