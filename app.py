@@ -10,49 +10,34 @@ except:
     CANVAS_AVAILABLE = False
 
 
-st.set_page_config(page_title="SolidShala V13", layout="wide")
+st.set_page_config(page_title="SolidShala V14", layout="wide")
 
-st.title("🛠️ SolidShala V13 - CAD GAME LEARNING ENGINE")
-st.write("🎮 Build Real Products Step-by-Step (Like a Game)")
-
-
-# =========================
-# SESSION STATE (GAME ENGINE)
-# =========================
-if "step" not in st.session_state:
-    st.session_state.step = 0
-
-if "product" not in st.session_state:
-    st.session_state.product = "Bottle"
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-if "score" not in st.session_state:
-    st.session_state.score = 0
+st.title("🛠️ SolidShala V14 - Real CAD Learning Engine")
+st.write("Professional CAD Feel - Same Model, Live Modification")
 
 
 # =========================
-# PRODUCTS (MISSIONS)
+# MODEL STATE (REAL CAD CORE)
 # =========================
-PRODUCTS = {
-    "Bottle": ["Sketch Circle", "Revolve", "Shell", "Fillet Finish"],
-    "Box": ["Sketch Square", "Extrude", "Cut Hole", "Chamfer Finish"],
-    "Stand": ["Sketch Base", "Extrude", "Cut Slot", "Fillet Finish"]
-}
+if "model_type" not in st.session_state:
+    st.session_state.model_type = "cube"
+
+if "modifiers" not in st.session_state:
+    st.session_state.modifiers = []
 
 
 # =========================
-# 3D MODELS
+# BASE MODELS
 # =========================
-def cube():
+def base_cube():
     x = [0,1,1,0,0,1,1,0]
     y = [0,0,1,1,0,0,1,1]
     z = [0,0,0,0,1,1,1,1]
     return go.Figure(data=[go.Mesh3d(x=x,y=y,z=z,opacity=0.5)])
 
-def cylinder():
-    t = np.linspace(0,2*np.pi,50)
+
+def base_cylinder():
+    t = np.linspace(0,2*np.pi,60)
     z = np.linspace(0,1,2)
     t,z = np.meshgrid(t,z)
     x = np.cos(t)
@@ -60,142 +45,149 @@ def cylinder():
     return go.Figure(data=[go.Surface(x=x,y=y,z=z)])
 
 
+# =========================
+# REAL CAD RENDER PIPELINE
+# =========================
 def render_model():
-    if st.session_state.product == "Bottle":
-        return cylinder()
-    return cube()
+
+    fig = base_cube() if st.session_state.model_type == "cube" else base_cylinder()
+
+    # APPLY MODIFIERS VISUALLY (SIMULATION LAYER)
+    for m in st.session_state.modifiers:
+
+        if m == "Cut":
+            fig.update_layout(title="Cut Applied (Material Removed)")
+        elif m == "Shell":
+            fig.update_layout(title="Shell Applied (Hollow Model)")
+        elif m == "Fillet":
+            fig.update_layout(title="Fillet Applied (Smooth Edges)")
+        elif m == "Chamfer":
+            fig.update_layout(title="Chamfer Applied (Beveled Edge)")
+        else:
+            fig.update_layout(title=f"{m} Applied")
+
+    return fig
 
 
 # =========================
-# ANIMATION ENGINE (IMPORTANT)
+# SMOOTH ANIMATION ENGINE
 # =========================
-def animate(text):
+def animate(action):
+
     box = st.empty()
 
-    steps = [
-        "Analyzing sketch...",
-        text,
-        "Applying transformation...",
+    frames = [
+        "Loading geometry...",
+        "Applying tool: " + action,
         "Updating model...",
-        "Done ✅"
+        "Rebuilding surfaces...",
+        "Finalizing..."
     ]
 
-    for s in steps:
-        box.info(s)
-        time.sleep(0.3)
+    for f in frames:
+        box.info(f)
+        time.sleep(0.35)
 
-    box.success("Step Completed 🎯")
-
-
-# =========================
-# TOOL SIMULATION ENGINE
-# =========================
-def apply_step(step_name):
-
-    if "Sketch" in step_name:
-        st.session_state.score += 1
-
-    elif "Extrude" in step_name:
-        st.session_state.score += 2
-
-    elif "Revolve" in step_name:
-        st.session_state.score += 2
-
-    elif "Cut" in step_name:
-        st.session_state.score += 3
-
-    elif "Shell" in step_name:
-        st.session_state.score += 3
-
-    elif "Fillet" in step_name:
-        st.session_state.score += 1
-
-    st.session_state.history.append(step_name)
+    box.success("Model Updated Successfully")
 
 
 # =========================
-# SIDEBAR (GAME CONTROL)
+# TOOL ENGINE (REAL CAD STYLE)
 # =========================
-st.sidebar.header("🎮 Game Panel")
+def apply_tool(tool):
 
-st.session_state.product = st.sidebar.selectbox("Select Product Mission", list(PRODUCTS.keys()))
+    if tool == "Extrude":
+        st.session_state.model_type = "cube"
 
-step_list = PRODUCTS[st.session_state.product]
+    elif tool == "Revolve":
+        st.session_state.model_type = "cylinder"
 
-st.sidebar.write("📌 Steps:")
-for i, s in enumerate(step_list, 1):
-    st.sidebar.write(f"{i}. {s}")
-
-st.sidebar.metric("⭐ Score", st.session_state.score)
-
-
-# =========================
-# MAIN GAME UI
-# =========================
-col1, col2 = st.columns([1,1])
-
-
-# =========================
-# CANVAS (MAIN INPUT)
-# =========================
-with col1:
-
-    st.subheader("✏️ Sketch Area")
-
-    if CANVAS_AVAILABLE:
-        canvas = st_canvas(
-            fill_color="rgba(0, 0, 255, 0.2)",
-            stroke_width=3,
-            stroke_color="#000",
-            background_color="#fff",
-            height=350,
-            drawing_mode="freedraw",
-            key="canvas"
-        )
     else:
-        st.warning("Install streamlit-drawable-canvas")
+        st.session_state.modifiers.append(tool)
 
 
 # =========================
-# MODEL VIEW + GAME ACTION
+# 20 TOOLS (PRO CAD LIST)
 # =========================
-with col2:
+TOOLS = [
+    "Extrude","Revolve","Cut","Fillet","Chamfer",
+    "Shell","Loft","Sweep","Pattern","Mirror",
+    "Scale","Move","Rotate","Union","Subtract",
+    "Intersect","Draft","Offset","Thicken","FilletEdge"
+]
 
-    st.subheader("🏗️ Live Product Builder")
 
-    st.plotly_chart(render_model(), use_container_width=True)
+tool = st.sidebar.selectbox("Tool", TOOLS)
+mode = st.sidebar.radio("Mode", ["Modeling", "Learn"])
 
-    if st.session_state.step < len(step_list):
 
-        current_step = step_list[st.session_state.step]
+# =========================
+# LEARN MODE (CLEAN + PROFESSIONAL)
+# =========================
+if mode == "Learn":
 
-        st.info(f"Next Step: {current_step}")
+    st.header("📘 Tool Understanding")
 
-        if st.button("▶ Apply Step"):
+    explanations = {
+        "Extrude": "2D sketch ko 3D solid banata hai.",
+        "Revolve": "Profile ko rotate karke 3D shape banata hai.",
+        "Cut": "Material remove karta hai.",
+        "Shell": "Solid ko hollow banata hai.",
+        "Fillet": "Edges smooth karta hai.",
+        "Chamfer": "Edges bevel karta hai."
+    }
 
-            animate(current_step)
+    st.info(explanations.get(tool, "CAD modeling tool for shape modification."))
 
-            apply_step(current_step)
 
-            st.session_state.step += 1
+# =========================
+# MODELING MODE (REAL CAD FEEL)
+# =========================
+else:
+
+    col1, col2 = st.columns([1.2, 1])
+
+    with col1:
+
+        st.subheader("✏️ Sketch Canvas")
+
+        if CANVAS_AVAILABLE:
+            st_canvas(
+                fill_color="rgba(0,0,255,0.1)",
+                stroke_width=3,
+                stroke_color="#000",
+                background_color="#fff",
+                height=400,
+                drawing_mode="freedraw",
+                key="canvas"
+            )
+        else:
+            st.warning("Install streamlit-drawable-canvas")
+
+    with col2:
+
+        st.subheader("🏗️ Live Model")
+
+        st.plotly_chart(render_model(), use_container_width=True)
+
+        if st.button("Apply Tool"):
+
+            animate(tool)
+
+            apply_tool(tool)
 
             st.rerun()
 
-    else:
-        st.success("🎉 Product Completed!")
-
-        st.balloons()
-
 
 # =========================
-# HISTORY SYSTEM (REPLAY FEEL)
+# MODIFIER HISTORY (IMPORTANT CAD FEEL)
 # =========================
 st.divider()
 
-st.subheader("📜 Build History")
+st.subheader("📜 Feature History (CAD Tree)")
 
-if st.session_state.history:
-    for i, h in enumerate(st.session_state.history, 1):
-        st.write(f"Step {i}: {h}")
+if st.session_state.modifiers:
+    for i, m in enumerate(st.session_state.modifiers, 1):
+        st.write(f"{i}. {m}")
 else:
-    st.info("No steps yet")
+    st.info("No modifications yet")
