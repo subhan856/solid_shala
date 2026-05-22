@@ -1,9 +1,12 @@
 {
   "users": {
-    "uid123": {
-      "name": "Student",
-      "score": 0,
-      "level": 1
+    "uid1": {
+      "name": "Ali",
+      "score": 120,
+      "level": 3
     }
+  },
+  "leaderboard": {
+    "top": ["Ali", "Ahmed", "Sara"]
   }
 }
