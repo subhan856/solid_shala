@@ -1,138 +1,171 @@
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
-import time
+import plotly.graph_objects as go
+import numpy as np
 
-st.set_page_config(page_title="SolidShala V2", layout="wide")
+st.set_page_config(page_title="SolidShala V3", layout="wide")
 
-st.title("🛠️ SolidShala V2 - CAD Learning Simulator")
+# =========================
+# TITLE
+# =========================
+st.title("🛠️ SolidShala V3 - CAD Learning Simulator")
+st.write("Learn CAD like a game 🎮")
 
-# Sidebar
+# =========================
+# 3D FUNCTIONS
+# =========================
+def draw_box(l, w, h):
+    x = [0, l, l, 0, 0, l, l, 0]
+    y = [0, 0, w, w, 0, 0, w, w]
+    z = [0, 0, 0, 0, h, h, h, h]
+
+    fig = go.Figure(data=[go.Mesh3d(x=x, y=y, z=z, opacity=0.5)])
+    fig.update_layout(scene=dict(aspectmode='data'))
+    return fig
+
+
+def draw_cylinder(r, h):
+    theta = np.linspace(0, 2*np.pi, 30)
+    z = np.linspace(0, h, 2)
+    theta_grid, z_grid = np.meshgrid(theta, z)
+
+    x = r * np.cos(theta_grid)
+    y = r * np.sin(theta_grid)
+
+    fig = go.Figure(data=[go.Surface(x=x, y=y, z=z_grid)])
+    fig.update_layout(scene=dict(aspectmode='data'))
+    return fig
+
+
+# =========================
+# SIDEBAR MENU (5 TOOLS)
+# =========================
 menu = st.sidebar.radio(
-    "Choose Tool",
-    ["Home", "Tool 1: Lamba Karo", "Tool 2: Ghumao Karo", "Progress"]
+    "🎯 Select Tool",
+    [
+        "Home",
+        "Tool 1: Lamba Karo (Extrude)",
+        "Tool 2: Ghumao Karo (Revolve)",
+        "Tool 3: Kato Karo (Cut)",
+        "Tool 4: Gol Kona (Fillet)",
+        "Tool 5: Engineer Test",
+    ]
 )
 
-# ========================
+# =========================
 # HOME
-# ========================
+# =========================
 if menu == "Home":
-    st.write("Welcome 🚀")
-    st.write("Yahan tum CAD tools ko drawing + action se seekhoge")
+    st.header("Welcome 🚀")
+    st.write("Ye app tumhe CAD tools simple way me sikhayega")
+    st.info("Tool select karo aur start karo")
 
-# ========================
+# =========================
 # TOOL 1 - EXTRUDE
-# ========================
-elif menu == "Tool 1: Lamba Karo":
+# =========================
+elif menu == "Tool 1: Lamba Karo (Extrude)":
 
-    st.header("📘 Lamba Karo (Extrude Feel)")
+    st.header("📦 Tool 1: Lamba Karo")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("✏️ Draw Sketch")
-
         st_canvas(
             fill_color="rgba(0,255,0,0.3)",
             stroke_width=3,
             height=300,
             width=300,
             drawing_mode="rect",
-            key="canvas1"
+            key="t1"
         )
 
     with col2:
-        st.subheader("⚙️ Controls")
-
-        length = st.slider("Length", 10, 100, 50)
-        width = st.slider("Width", 10, 100, 30)
-        height = st.slider("Height", 1, 50, 10)
+        l = st.slider("Length", 10, 100, 50)
+        w = st.slider("Width", 10, 100, 30)
+        h = st.slider("Height", 1, 50, 10)
 
         if st.button("🚀 Lamba Karo"):
-
-            st.write("Step 1: Sketch ready...")
-            time.sleep(0.5)
-
-            st.write("Step 2: Extrusion start...")
-            time.sleep(0.5)
-
-            st.write("Step 3: Material add ho raha hai...")
-            time.sleep(0.5)
-
-            st.success("✅ 3D Box Ready!")
-
+            st.success("Extrusion started...")
+            fig = draw_box(l, w, h)
+            st.plotly_chart(fig)
             st.balloons()
 
-    with col3:
-        st.subheader("📦 Result")
-
-        st.info("Ye ek simple 3D box hai jo extrusion se bana")
-
-        st.write(f"Length: {length}")
-        st.write(f"Width: {width}")
-        st.write(f"Height: {height}")
-
-# ========================
+# =========================
 # TOOL 2 - REVOLVE
-# ========================
-elif menu == "Tool 2: Ghumao Karo":
+# =========================
+elif menu == "Tool 2: Ghumao Karo (Revolve)":
 
-    st.header("🔄 Ghumao Karo (Revolve Feel)")
+    st.header("🔄 Tool 2: Ghumao Karo")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("✏️ Profile")
-
         st_canvas(
             fill_color="rgba(255,0,0,0.3)",
             stroke_width=3,
             height=300,
             width=300,
             drawing_mode="circle",
-            key="canvas2"
+            key="t2"
         )
 
     with col2:
-        st.subheader("⚙️ Action")
-
-        shape = st.selectbox("Select Object", ["Bottle", "Cup", "Cone"])
+        r = st.slider("Radius", 5, 50, 10)
+        h = st.slider("Height", 10, 100, 50)
 
         if st.button("🔄 Ghumao Karo"):
-
-            st.write("Step 1: Profile detect ho raha hai...")
-            time.sleep(0.5)
-
-            st.write("Step 2: Axis set ho rahi hai...")
-            time.sleep(0.5)
-
-            st.write("Step 3: 360° rotation...")
-            time.sleep(0.5)
-
-            st.success(f"✅ {shape} Ready!")
-
+            st.success("Revolve started...")
+            fig = draw_cylinder(r, h)
+            st.plotly_chart(fig)
             st.balloons()
 
-    with col3:
-        st.subheader("📦 Result")
+# =========================
+# TOOL 3 - CUT
+# =========================
+elif menu == "Tool 3: Kato Karo (Cut)":
 
-        if shape == "Bottle":
-            st.info("Thin curved profile → bottle shape")
-        elif shape == "Cup":
-            st.info("Hollow revolve → cup shape")
+    st.header("✂️ Tool 3: Cut Feature")
+
+    base = st.slider("Base Size", 10, 100, 50)
+    cut = st.slider("Cut Depth", 1, 50, 10)
+
+    if st.button("✂️ Cut Apply"):
+
+        st.success("Hole created in model")
+        fig = draw_box(base, base, base - cut)
+        st.plotly_chart(fig)
+
+# =========================
+# TOOL 4 - FILLET
+# =========================
+elif menu == "Tool 4: Gol Kona (Fillet)":
+
+    st.header("🔵 Tool 4: Fillet")
+
+    st.write("Sharp edges → rounded edges concept")
+
+    if st.button("🔵 Apply Fillet"):
+        st.success("Edges rounded!")
+        fig = draw_box(50, 50, 50)
+        st.plotly_chart(fig)
+
+# =========================
+# TOOL 5 - ENGINEER TEST
+# =========================
+elif menu == "Tool 5: Engineer Test":
+
+    st.header("🧠 Engineer Challenge")
+
+    q = st.radio(
+        "Bottle kis tool se banegi?",
+        ["Extrude", "Revolve", "Cut"]
+    )
+
+    if st.button("Check"):
+
+        if q == "Revolve":
+            st.success("Correct! Bottle revolve se banti hai 🔥")
         else:
-            st.info("Tapered revolve → cone shape")
+            st.error("Wrong answer. Soch real shape!")
 
-# ========================
-# PROGRESS
-# ========================
-elif menu == "Progress":
-
-    st.header("📈 Progress Tracker")
-
-    st.progress(0.5)
-
-    st.write("✔ Tool 1 done")
-    st.write("✔ Tool 2 done (basic)")
-    st.write("🔒 Tool 3 coming soon")
-
-    st.success("Keep going 🔥")
+        st.info("Practice makes engineer 💡")
