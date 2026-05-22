@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
-import time
 
 # optional canvas
 try:
@@ -14,13 +13,13 @@ except:
 # =====================================================
 # PAGE
 # =====================================================
-st.set_page_config(page_title="SolidShala V2", layout="wide")
+st.set_page_config(page_title="SolidShala CAD", layout="wide")
 
-st.title("🛠️ SolidShala AI CAD Engine V2")
-st.write("Sketch → AI Detect → Apply Tools → Build Model")
+st.title("🛠️ SolidShala AI CAD Engine")
+st.write("Stable Version (No Crash + Full Tools)")
 
 # =====================================================
-# STATE
+# SAFE MODEL INIT (IMPORTANT FIX)
 # =====================================================
 if "model" not in st.session_state:
     st.session_state.model = {
@@ -40,22 +39,19 @@ if "model" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+m = st.session_state.model
+
 # =====================================================
 # SHAPES
 # =====================================================
 def create_circle():
-    m = st.session_state.model
     m["shape"] = "circle"
-    m["radius"] = 1.0
-    m["height"] = 1.0
 
 def create_square():
-    m = st.session_state.model
     m["shape"] = "square"
-    m["height"] = 1.0
 
 # =====================================================
-# SIMPLE AI (SAFE)
+# SIMPLE DETECT
 # =====================================================
 def detect_shape():
     if np.random.random() > 0.5:
@@ -66,11 +62,9 @@ def detect_shape():
         return "square"
 
 # =====================================================
-# TOOL ENGINE (FULL)
+# TOOL ENGINE
 # =====================================================
 def apply_tool(tool):
-
-    m = st.session_state.model
 
     if tool == "Extrude":
         m["height"] += 0.5
@@ -98,15 +92,19 @@ def apply_tool(tool):
         m["pattern"] += 1
 
     elif tool == "Reset":
-        m["height"] = 1
-        m["radius"] = 1
-        m["cut_depth"] = 0
-        m["chamfer"] = 0
-        m["fillet"] = 0
-        m["shell"] = 0
-        m["scale"] = 1
-        m["pattern"] = 1
-        m["features"] = []
+        m.update({
+            "shape": None,
+            "radius": 1.0,
+            "height": 1.0,
+            "cut_depth": 0.0,
+            "chamfer": 0.0,
+            "fillet": 0.0,
+            "shell": 0.0,
+            "scale": 1.0,
+            "mirror": False,
+            "pattern": 1,
+            "features": []
+        })
 
     m["features"].append(tool)
 
@@ -116,11 +114,10 @@ def apply_tool(tool):
     })
 
 # =====================================================
-# SAFE RENDER (FULL VISUAL)
+# SAFE RENDER (FIXED + STABLE)
 # =====================================================
 def render_model():
 
-    m = st.session_state.model
     fig = go.Figure()
 
     shape = m["shape"]
@@ -135,7 +132,7 @@ def render_model():
 
         h = m["height"]
 
-        t = np.linspace(0, 2*np.pi, 50)
+        t = np.linspace(0, 2*np.pi, 40)
         z = np.linspace(0, h, 20)
 
         t, z = np.meshgrid(t, z)
@@ -148,20 +145,12 @@ def render_model():
         # shell
         if m["shell"] > 0:
             r2 = max(0.1, r - m["shell"] * 0.2)
+
             fig.add_trace(go.Surface(
                 x=r2*np.cos(t),
                 y=r2*np.sin(t),
                 z=z,
                 opacity=0.3
-            ))
-
-        # pattern
-        for i in range(1, m["pattern"]):
-            fig.add_trace(go.Surface(
-                x=x + i*2,
-                y=y,
-                z=z,
-                opacity=0.4
             ))
 
     # =========================
@@ -181,7 +170,7 @@ def render_model():
 
         fig.add_trace(go.Mesh3d(x=x, y=y, z=z, opacity=0.7))
 
-        # chamfer
+        # chamfer (visual safe)
         if c > 0:
             fig.add_trace(go.Mesh3d(
                 x=[c, size-c, size, 0],
@@ -224,7 +213,7 @@ def render_model():
     return fig
 
 # =====================================================
-# TOOLS LIST (FULL RESTORED)
+# TOOLS
 # =====================================================
 TOOLS = [
     "Extrude",
@@ -275,10 +264,9 @@ with col2:
 
     st.subheader("📊 Model Info")
 
-    m = st.session_state.model
-
     st.write("Shape:", m["shape"])
     st.write("Height:", m["height"])
+    st.write("Cut:", m["cut_depth"])
     st.write("Chamfer:", m["chamfer"])
     st.write("Shell:", m["shell"])
     st.write("Pattern:", m["pattern"])
