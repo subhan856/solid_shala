@@ -1,0 +1,9 @@
+{
+  "users": {
+    "uid123": {
+      "name": "Student",
+      "score": 0,
+      "level": 1
+    }
+  }
+}
