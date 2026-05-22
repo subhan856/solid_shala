@@ -3,70 +3,89 @@ import numpy as np
 import plotly.graph_objects as go
 import random
 
-st.set_page_config(page_title="SolidShala Stable CAD LMS", layout="wide")
+st.set_page_config(page_title="SolidShala Industry CAD LMS", layout="wide")
 
-st.title("🏭 SolidShala CAD LMS (Stable Production Version)")
-st.write("Clean + Stable + Learning Focused System")
-
-# =========================
-# SAFE SESSION STATE
-# =========================
-if "score" not in st.session_state:
-    st.session_state.score = 0
-
-if "tool_index" not in st.session_state:
-    st.session_state.tool_index = 0
-
-if "stage" not in st.session_state:
-    st.session_state.stage = "start"
-
-if "height" not in st.session_state:
-    st.session_state.height = 1.0
+st.title("🏭 SolidShala Industry CAD Learning System")
+st.write("Professional Engineering Training Platform (Stable + Scalable)")
 
 # =========================
-# SAFE TOOL SYSTEM (200 LOGIC)
+# SAFE STATE MANAGEMENT
+# =========================
+for key, val in {
+    "score": 0,
+    "tool_index": 0,
+    "stage": "start",
+    "height": 1.0,
+    "mode": "Learn"
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = val
+
+# =========================
+# TOOL ENGINE (200 SAFE TOOLS)
 # =========================
 BASE_TOOLS = [
-    ("Extrude", "create"),
-    ("Revolve", "create"),
-    ("Cut", "modify"),
-    ("Fillet", "finish"),
-    ("Chamfer", "finish"),
-    ("Shell", "modify"),
-    ("Pattern", "copy"),
-    ("Mirror", "copy")
+    ("Extrude", "create", "2D to 3D conversion"),
+    ("Revolve", "create", "Rotational geometry"),
+    ("Cut", "modify", "Material removal"),
+    ("Fillet", "finish", "Edge smoothing"),
+    ("Chamfer", "finish", "Angular edge"),
+    ("Shell", "modify", "Hollow body"),
+    ("Pattern", "copy", "Repeat feature"),
+    ("Mirror", "copy", "Symmetry"),
 ]
 
-TOOLS = []
-for i in range(200):
-    t = random.choice(BASE_TOOLS)
-    TOOLS.append({
-        "name": f"{t[0]}_{i}",
-        "type": t[1],
-        "why": f"{t[0]} engineering concept"
-    })
+TOOLS = [
+    {
+        "name": f"{random.choice(BASE_TOOLS)[0]}_{i}",
+        "type": random.choice(BASE_TOOLS)[1],
+        "why": random.choice(BASE_TOOLS)[2]
+    }
+    for i in range(200)
+]
 
-tool = TOOLS[st.session_state.tool_index % len(TOOLS)]
-
-# =========================
-# QUESTION ENGINE (SAFE)
-# =========================
-def question(tool):
-    if "Extrude" in tool["name"]:
-        return "2D → 3D ke liye best tool?", ["Extrude", "Cut", "Mirror"], "Extrude"
-
-    if "Cut" in tool["name"]:
-        return "Material remove karne ke liye?", ["Cut", "Fillet", "Pattern"], "Cut"
-
-    if "Revolve" in tool["name"]:
-        return "Rotational shape ke liye?", ["Revolve", "Extrude", "Scale"], "Revolve"
-
-    return "Tool category?", ["Create", "Modify", "Finish"], tool["type"].capitalize()
-
-q, options, answer = question(tool)
+tool = TOOLS[st.session_state.tool_index % 200]
 
 # =========================
-# SAFE CAD RENDER
+# QUESTION ENGINE
+# =========================
+def generate_question(tool):
+
+    name = tool["name"]
+
+    if "Extrude" in name:
+        return "2D sketch ko 3D banane ke liye?", ["Extrude", "Cut", "Mirror"], "Extrude"
+
+    if "Cut" in name:
+        return "Material remove karne ke liye tool?", ["Cut", "Fillet", "Pattern"], "Cut"
+
+    if "Revolve" in name:
+        return "Rotational part ke liye?", ["Revolve", "Extrude", "Scale"], "Revolve"
+
+    return "Tool category kya hai?", ["Create", "Modify", "Finish"], tool["type"].capitalize()
+
+q, options, answer = generate_question(tool)
+
+# =========================
+# AI TUTOR (RULE BASED)
+# =========================
+def ai_tutor(q):
+
+    q = q.lower()
+
+    if "extrude" in q:
+        return "Extrude = 2D sketch ko 3D solid banata hai (height add hoti hai)."
+
+    if "cut" in q:
+        return "Cut = material remove karne ka process (subtractive)."
+
+    if "revolve" in q:
+        return "Revolve = axis ke around rotation se shape banti hai."
+
+    return "Engineering thinking: shape + function + manufacturing logic samjho."
+
+# =========================
+# CAD RENDER ENGINE (SAFE)
 # =========================
 def render(stage):
 
@@ -74,7 +93,7 @@ def render(stage):
     h = st.session_state.height
 
     if stage == "start":
-        t = np.linspace(0, 2*np.pi, 50)
+        t = np.linspace(0, 2*np.pi, 60)
         fig.add_trace(go.Scatter3d(
             x=np.cos(t),
             y=np.sin(t),
@@ -84,7 +103,7 @@ def render(stage):
 
     elif stage == "create":
         t = np.linspace(0, 2*np.pi, 30)
-        z = np.linspace(0, h, 15)
+        z = np.linspace(0, h, 20)
         t, z = np.meshgrid(t, z)
 
         fig.add_trace(go.Surface(
@@ -103,7 +122,7 @@ def render(stage):
 
     elif stage == "finish":
         t = np.linspace(0, 2*np.pi, 40)
-        z = np.linspace(0, h, 15)
+        z = np.linspace(0, h, 20)
         t, z = np.meshgrid(t, z)
 
         fig.add_trace(go.Surface(
@@ -119,6 +138,16 @@ def render(stage):
 # =========================
 # UI
 # =========================
+st.sidebar.title("📊 Dashboard")
+
+st.sidebar.write("Score:", st.session_state.score)
+st.sidebar.write("Tool:", st.session_state.tool_index, "/ 200")
+
+progress = st.session_state.tool_index / 200
+st.sidebar.progress(progress)
+
+mode = st.sidebar.radio("Mode", ["Learn", "Practice", "Exam"])
+
 st.subheader(f"🛠 Tool: {tool['name']}")
 st.info(tool["why"])
 
@@ -130,11 +159,10 @@ st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
 # =========================
 # ACTIONS
 # =========================
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    if st.button("Submit Answer"):
-
+    if st.button("Submit"):
         if choice == answer:
             st.success("✔ Correct Thinking")
             st.session_state.score += 1
@@ -151,28 +179,23 @@ with col1:
         st.session_state.tool_index += 1
 
 with col2:
+    if st.button("🤖 AI Help"):
+        st.info(ai_tutor(q))
+
+with col3:
     if st.button("Next Tool"):
         st.session_state.tool_index += 1
 
 # =========================
 # CAD VIEW
 # =========================
-st.subheader("📐 CAD View")
+st.subheader("📐 Live CAD Simulation")
 st.plotly_chart(render(st.session_state.stage), use_container_width=True)
 
 # =========================
-# FIXED PROGRESS BAR (IMPORTANT FIX)
+# RESET SYSTEM
 # =========================
-st.sidebar.title("📊 Dashboard")
-
-progress = st.session_state.tool_index % 200
-st.sidebar.progress(progress / 200)   # ✅ FIXED RANGE (0–1 safe)
-
-st.sidebar.write("Score:", st.session_state.score)
-st.sidebar.write("Tool:", st.session_state.tool_index, "/ 200")
-
-# RESET
-if st.sidebar.button("Reset"):
+if st.sidebar.button("Reset All"):
     st.session_state.score = 0
     st.session_state.tool_index = 0
     st.session_state.stage = "start"
