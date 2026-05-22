@@ -3,17 +3,14 @@ import numpy as np
 import plotly.graph_objects as go
 import random
 
-st.set_page_config(page_title="SolidShala Startup CAD LMS", layout="wide")
+st.set_page_config(page_title="SolidShala Stable CAD LMS", layout="wide")
 
-st.title("🚀 SolidShala Startup CAD Learning Platform")
-st.write("From Beginner → Engineer → CAD Expert")
+st.title("🏭 SolidShala CAD LMS (Stable Production Version)")
+st.write("Clean + Stable + Learning Focused System")
 
 # =========================
-# USERS (simple simulation login)
+# SAFE SESSION STATE
 # =========================
-if "user" not in st.session_state:
-    st.session_state.user = "Guest"
-
 if "score" not in st.session_state:
     st.session_state.score = 0
 
@@ -27,25 +24,9 @@ if "height" not in st.session_state:
     st.session_state.height = 1.0
 
 # =========================
-# LOGIN SYSTEM (simple)
+# SAFE TOOL SYSTEM (200 LOGIC)
 # =========================
-st.sidebar.title("🔐 Login System")
-
-name = st.sidebar.text_input("Enter Name")
-
-if st.sidebar.button("Login"):
-    if name:
-        st.session_state.user = name
-        st.sidebar.success(f"Welcome {name}")
-    else:
-        st.sidebar.error("Enter name first")
-
-st.sidebar.write("👤 User:", st.session_state.user)
-
-# =========================
-# 200 TOOLS SYSTEM
-# =========================
-BASE = [
+BASE_TOOLS = [
     ("Extrude", "create"),
     ("Revolve", "create"),
     ("Cut", "modify"),
@@ -53,56 +34,39 @@ BASE = [
     ("Chamfer", "finish"),
     ("Shell", "modify"),
     ("Pattern", "copy"),
-    ("Mirror", "copy"),
-    ("Sweep", "create"),
-    ("Loft", "create")
+    ("Mirror", "copy")
 ]
 
 TOOLS = []
 for i in range(200):
-    t = random.choice(BASE)
+    t = random.choice(BASE_TOOLS)
     TOOLS.append({
         "name": f"{t[0]}_{i}",
         "type": t[1],
-        "why": f"{t[0]} engineering use case {i}"
+        "why": f"{t[0]} engineering concept"
     })
 
 tool = TOOLS[st.session_state.tool_index % len(TOOLS)]
 
 # =========================
-# QUESTION ENGINE
+# QUESTION ENGINE (SAFE)
 # =========================
-def make_question(tool):
-
+def question(tool):
     if "Extrude" in tool["name"]:
-        return "2D sketch ko 3D banane ke liye?", ["Extrude", "Cut", "Mirror"], "Extrude"
+        return "2D → 3D ke liye best tool?", ["Extrude", "Cut", "Mirror"], "Extrude"
 
     if "Cut" in tool["name"]:
         return "Material remove karne ke liye?", ["Cut", "Fillet", "Pattern"], "Cut"
 
     if "Revolve" in tool["name"]:
-        return "Rotational part ke liye?", ["Revolve", "Extrude", "Scale"], "Revolve"
+        return "Rotational shape ke liye?", ["Revolve", "Extrude", "Scale"], "Revolve"
 
-    return f"{tool['name']} kis category ka tool hai?", ["Create", "Modify", "Finish"], tool["type"].capitalize()
+    return "Tool category?", ["Create", "Modify", "Finish"], tool["type"].capitalize()
 
-q, options, answer = make_question(tool)
-
-# =========================
-# AI TUTOR
-# =========================
-def ai_tutor(q):
-
-    if "Extrude" in q:
-        return "Extrude = 2D sketch → 3D solid"
-    if "Cut" in q:
-        return "Cut = material removal process"
-    if "Revolve" in q:
-        return "Revolve = axis rotation geometry"
-
-    return "Think: geometry + function + engineering logic"
+q, options, answer = question(tool)
 
 # =========================
-# CAD MODEL ENGINE
+# SAFE CAD RENDER
 # =========================
 def render(stage):
 
@@ -110,7 +74,7 @@ def render(stage):
     h = st.session_state.height
 
     if stage == "start":
-        t = np.linspace(0, 2*np.pi, 80)
+        t = np.linspace(0, 2*np.pi, 50)
         fig.add_trace(go.Scatter3d(
             x=np.cos(t),
             y=np.sin(t),
@@ -119,8 +83,8 @@ def render(stage):
         ))
 
     elif stage == "create":
-        t = np.linspace(0, 2*np.pi, 50)
-        z = np.linspace(0, h, 25)
+        t = np.linspace(0, 2*np.pi, 30)
+        z = np.linspace(0, h, 15)
         t, z = np.meshgrid(t, z)
 
         fig.add_trace(go.Surface(
@@ -138,8 +102,8 @@ def render(stage):
         fig.add_trace(go.Mesh3d(x=x, y=y, z=z, opacity=0.8))
 
     elif stage == "finish":
-        t = np.linspace(0, 2*np.pi, 60)
-        z = np.linspace(0, h, 25)
+        t = np.linspace(0, 2*np.pi, 40)
+        z = np.linspace(0, h, 15)
         t, z = np.meshgrid(t, z)
 
         fig.add_trace(go.Surface(
@@ -155,13 +119,10 @@ def render(stage):
 # =========================
 # UI
 # =========================
-st.subheader(f"👤 Student: {st.session_state.user}")
-
 st.subheader(f"🛠 Tool: {tool['name']}")
 st.info(tool["why"])
 
 st.subheader("🎯 Question")
-
 choice = st.radio(q, options)
 
 st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
@@ -169,10 +130,11 @@ st.slider("Model Scale", 1.0, 5.0, 1.0, key="height")
 # =========================
 # ACTIONS
 # =========================
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("Submit"):
+    if st.button("Submit Answer"):
+
         if choice == answer:
             st.success("✔ Correct Thinking")
             st.session_state.score += 1
@@ -189,34 +151,28 @@ with col1:
         st.session_state.tool_index += 1
 
 with col2:
-    if st.button("🤖 AI Help"):
-        st.info(ai_tutor(q))
-
-with col3:
     if st.button("Next Tool"):
         st.session_state.tool_index += 1
 
 # =========================
-# MODEL VIEW
+# CAD VIEW
 # =========================
-st.subheader("📐 CAD Simulation")
+st.subheader("📐 CAD View")
 st.plotly_chart(render(st.session_state.stage), use_container_width=True)
 
 # =========================
-# LEADERBOARD (simple local)
+# FIXED PROGRESS BAR (IMPORTANT FIX)
 # =========================
-st.sidebar.title("🏆 Dashboard")
+st.sidebar.title("📊 Dashboard")
 
-st.sidebar.write("User:", st.session_state.user)
+progress = st.session_state.tool_index % 200
+st.sidebar.progress(progress / 200)   # ✅ FIXED RANGE (0–1 safe)
+
 st.sidebar.write("Score:", st.session_state.score)
-st.sidebar.write("Progress Tool:", st.session_state.tool_index)
+st.sidebar.write("Tool:", st.session_state.tool_index, "/ 200")
 
-st.sidebar.progress((st.session_state.tool_index % 200) / 2)
-
-# =========================
 # RESET
-# =========================
-if st.sidebar.button("Reset System"):
+if st.sidebar.button("Reset"):
     st.session_state.score = 0
     st.session_state.tool_index = 0
     st.session_state.stage = "start"
